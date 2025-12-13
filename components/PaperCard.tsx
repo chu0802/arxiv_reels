@@ -11,6 +11,7 @@ interface PaperCardProps {
   availableCollections: Collection[];
   collectionIdMap?: Record<string, string>;
   onRate?: (paperId: number, rating: number) => void | Promise<void>;
+  onDetailOpenChange?: (isOpen: boolean) => void;
 }
 
 const PaperCard: React.FC<PaperCardProps> = ({ 
@@ -20,7 +21,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
     preloadAttributes = false,
   availableCollections,
   collectionIdMap,
-    onRate
+    onRate,
+    onDetailOpenChange
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
@@ -142,6 +144,16 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
     return isTeaserPortrait ? 'animate-zoom-in' : 'animate-zoom-rotate-in';
   };
+
+  // Notify parent to lock/unlock underlying scroll when detail drawer toggles
+  useEffect(() => {
+    onDetailOpenChange?.(isDetailOpen);
+  }, [isDetailOpen, onDetailOpenChange]);
+
+  // Ensure scroll is unlocked if this card unmounts while detail is open
+  useEffect(() => () => {
+    onDetailOpenChange?.(false);
+  }, [onDetailOpenChange]);
 
   return (
     <>

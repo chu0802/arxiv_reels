@@ -11,6 +11,7 @@ import { Collection } from './types';
 function App() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activePaperIndex, setActivePaperIndex] = useState(0);
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('Loading recommendations…');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -324,7 +325,7 @@ function App() {
       {/* Main Scroll Container */}
       <div 
         ref={scrollContainerRef}
-        className="w-full h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar relative"
+        className={`w-full h-full ${isDetailDrawerOpen ? 'overflow-hidden' : 'overflow-y-scroll'} snap-y snap-mandatory no-scrollbar relative overscroll-none`}
       >
         {/* Papers List */}
         {papers.map((paper, index) => {
@@ -349,6 +350,7 @@ function App() {
                 availableCollections={allCollections}
                 collectionIdMap={collectionIdMap}
                 onRate={handleRate}
+                onDetailOpenChange={setIsDetailDrawerOpen}
               />
             </div>
           );

@@ -101,8 +101,8 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   if (!shouldRender) return null;
 
   return (
-    <div 
-        className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center bg-slate-900/10 backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+  <div 
+    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center bg-slate-900/10 backdrop-blur-sm transition-opacity duration-300 overscroll-none ${show ? 'opacity-100' : 'opacity-0'}`}
         onClick={(e) => {
           e.stopPropagation();
           onClose();
@@ -137,10 +137,10 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
           </button>
         </div>
 
-        <div 
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto p-6 md:p-12 modern-scrollbar pt-4"
-        >
+    <div 
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-12 modern-scrollbar pt-4"
+    >
             {/* Header Info */}
             <div className="mb-6 flex flex-wrap items-center gap-3">
                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg bg-slate-50 text-slate-500">
