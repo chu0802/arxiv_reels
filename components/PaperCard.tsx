@@ -187,8 +187,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
                   }
               />
             {/* Main Image Layer */}
-            <div className="absolute inset-0 z-10 flex items-center justify-center pt-24 pb-12 px-6">
-              <div className="w-full h-full max-w-[440px] mx-auto flex items-center justify-center drop-shadow-2xl">
+            <div className="absolute inset-0 z-10 flex items-center justify-center pt-16 pb-10 px-6">
+              <div className="w-full h-full max-w-[440px] mx-auto flex items-center justify-center drop-shadow-2xl -translate-y-2">
                 {mainImageError ? (
                   <div className="w-full h-full flex flex-col items-center justify-start bg-slate-50 text-slate-600 border border-slate-200 rounded-sm px-4 pt-6 text-center gap-3">
                     <div className="w-[90%] text-sm font-semibold text-slate-800 line-clamp-2 mt-12 mb-2">{paper.title}</div>
@@ -242,7 +242,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
                     transform: 'scale(1.2)' 
                     }}
                 />
-                 <div className="absolute inset-0 z-10 flex items-center justify-center pt-24 pb-12 px-2">
+                 <div className="absolute inset-0 z-10 flex items-center justify-center pt-16 pb-10 px-2 -translate-y-2">
                     <img 
                         src={teaserImageUrl} 
                         alt="Teaser Figure"
@@ -312,7 +312,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
       </div>
 
       {/* Side Actions Bar - Soft Glassmorphism */}
-      <div className="absolute right-3 bottom-6 z-40 flex flex-col items-center gap-6 pointer-events-auto">
+  <div className="absolute right-3 bottom-12 z-40 flex flex-col items-center gap-6 pointer-events-auto">
         
         {/* Like */}
         <div className="flex flex-col items-center gap-1 group">
