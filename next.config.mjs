@@ -1,7 +1,6 @@
 import withPWA from "next-pwa";
 
 const config = {
-  experimental: { appDir: true },
   reactStrictMode: true,
 };
 
