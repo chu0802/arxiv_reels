@@ -188,7 +188,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
               />
             {/* Main Image Layer */}
             <div className="absolute inset-0 z-10 flex items-center justify-center pt-12 pb-8 px-6">
-              <div className="w-full h-full max-w-[440px] mx-auto flex items-center justify-center drop-shadow-2xl -translate-y-3">
+              <div className="w-full h-full max-w-[440px] mx-auto flex items-center justify-center drop-shadow-2xl -translate-y-4">
                 {mainImageError ? (
                   <div className="w-full h-full flex flex-col items-center justify-start bg-slate-50 text-slate-600 border border-slate-200 rounded-sm px-4 pt-6 text-center gap-3">
                     <div className="w-[90%] text-sm font-semibold text-slate-800 line-clamp-2 mt-12 mb-2">{paper.title}</div>

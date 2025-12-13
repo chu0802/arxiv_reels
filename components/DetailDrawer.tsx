@@ -50,6 +50,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       <div 
         className={`
             w-full h-[85vh] md:h-[90vh] md:max-w-4xl bg-white md:rounded-3xl rounded-t-3xl flex flex-col shadow-2xl overflow-hidden relative 
+            transition-transform duration-300 ease-out
         `}
         style={{ 
             transform: show ? 'translateY(0)' : 'translateY(100%)' 
