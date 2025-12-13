@@ -18,6 +18,9 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const touchStartY = useRef(0);
+  const lastTouchY = useRef(0);
+  const lastTouchTime = useRef(0);
+  const lastVelocity = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const displayCollections = collections || paper.collections;
@@ -46,37 +49,53 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   }, [isOpen]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
+    const y = e.touches[0].clientY;
+    touchStartY.current = y;
+    lastTouchY.current = y;
+    lastTouchTime.current = performance.now();
+    lastVelocity.current = 0;
+    setIsDragging(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-      const currentY = e.touches[0].clientY;
-      const delta = currentY - touchStartY.current;
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - touchStartY.current;
+    const now = performance.now();
+    const dy = currentY - lastTouchY.current;
+    const dt = Math.max(1, now - lastTouchTime.current);
+    lastVelocity.current = dy / dt; // px per ms
+    lastTouchY.current = currentY;
+    lastTouchTime.current = now;
 
-      // Only allow dragging down (delta > 0)
-      // And check if we are at the top of the scroll container
-      if (delta > 0 && scrollRef.current && scrollRef.current.scrollTop <= 0) {
-          setIsDragging(true);
-          setDragOffset(delta);
-          
-          // Try to prevent default scrolling if we are effectively dragging the sheet
-          // Note: This might be limited by passive event listeners in some browsers
-          if (e.cancelable && e.target !== scrollRef.current) {
-            // Optional: e.preventDefault() if needed, but often checking scrollTop is enough
-          }
-      } else if (isDragging && delta <= 0) {
-          // If dragged up past start, reset
-          setDragOffset(0);
-      }
+    const atTop = scrollRef.current ? scrollRef.current.scrollTop <= 0 : true;
+
+    if (delta > 0 && atTop) {
+      setIsDragging(true);
+      // Slight damping for smoother feel
+      const eased = delta * 0.9;
+      setDragOffset(eased);
+      if (e.cancelable) e.preventDefault();
+    } else if (isDragging) {
+      // When dragging but user moves up, ease back toward zero
+      setDragOffset(Math.max(0, delta * 0.5));
+    }
   };
 
   const handleTouchEnd = () => {
-      setIsDragging(false);
-      if (dragOffset > 120) { // Threshold to close
-          onClose();
-      } else {
-          setDragOffset(0); // Snap back
-      }
+    const velocityThreshold = 0.65; // px per ms (~650px/s)
+    const distanceThreshold = 120;
+    const shouldClose = dragOffset > distanceThreshold || lastVelocity.current > velocityThreshold;
+    setIsDragging(false);
+    if (shouldClose) {
+      onClose();
+    } else {
+      setDragOffset(0); // Snap back
+    }
+  };
+
+  const handleTouchCancel = () => {
+    setIsDragging(false);
+    setDragOffset(0);
   };
 
   if (!shouldRender) return null;
@@ -101,6 +120,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
       >
         {/* Handle Bar */}
         <div className="w-full flex justify-center pt-3 pb-1 shrink-0 z-20" onClick={onClose}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getPaperInsights } from '../services/geminiService';
+import { getPaperInsightsClient } from '../services/insightsClient';
 import { PaperData, ChatMessage } from '../types';
 
 interface ChatDrawerProps {
@@ -43,10 +43,10 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ paper, isOpen, onClose }) => {
     const newMessages = [...messages, { role: 'user', text: userMsg } as ChatMessage];
     setMessages(newMessages);
     
-    const responseText = await getPaperInsights(
-        paper.abstract, 
-        userMsg, 
-        messages.filter(m => m.role === 'user' || m.role === 'model')
+    const responseText = await getPaperInsightsClient(
+      paper.abstract,
+      userMsg,
+      messages.filter(m => m.role === 'user' || m.role === 'model')
     );
 
     setMessages([...newMessages, { role: 'model', text: responseText }]);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PaperData } from '../types';
+import { PaperData, Collection } from '../types';
 import DetailDrawer from './DetailDrawer';
 import CollectionDrawer from './CollectionDrawer';
 
@@ -8,19 +8,24 @@ interface PaperCardProps {
   isActive: boolean;
   priority?: boolean; // Controls eager loading for main images (heavy assets)
   preloadAttributes?: boolean; // Controls checking of metadata/structure (e.g. teaser availability)
+  availableCollections: Collection[];
+  collectionIdMap?: Record<string, string>;
+  onRate?: (paperId: number, rating: number) => void | Promise<void>;
 }
 
 const PaperCard: React.FC<PaperCardProps> = ({ 
     paper, 
     isActive, 
     priority = false,
-    preloadAttributes = false
+    preloadAttributes = false,
+  availableCollections,
+  collectionIdMap,
+    onRate
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const [mainImageError, setMainImageError] = useState(false);
   
   // Full Screen Teaser States
   const [showFullScreenTeaser, setShowFullScreenTeaser] = useState(false);
@@ -34,6 +39,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
   // Ref to handle click debounce
   const clickTimeoutRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const previousRatingRef = useRef(paper.rating);
+  const likeAnimationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Construct URLs
   const mainImageUrl = `https://paper-assets.alphaxiv.org/image/${paper.arxiv_id}v1.png`;
@@ -69,31 +76,37 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }, 500); // Match animation duration
   };
 
-  const triggerLike = () => {
-      setLiked(true);
+  const liked = (paper.rating ?? 0) > 0;
+  const disliked = (paper.rating ?? 0) < 0;
+
+  useEffect(() => {
+    if (paper.rating > 0 && (previousRatingRef.current ?? 0) <= 0) {
       setShowLikeAnimation(true);
-      setTimeout(() => setShowLikeAnimation(false), 800);
-  };
+      if (likeAnimationTimeoutRef.current) clearTimeout(likeAnimationTimeoutRef.current);
+      likeAnimationTimeoutRef.current = setTimeout(() => setShowLikeAnimation(false), 800);
+    }
+    previousRatingRef.current = paper.rating;
+
+    return () => {
+      if (likeAnimationTimeoutRef.current) clearTimeout(likeAnimationTimeoutRef.current);
+    };
+  }, [paper.rating]);
 
   const toggleLike = (e?: React.MouseEvent) => {
       e?.stopPropagation();
-      if (liked) {
-          setLiked(false);
-      } else {
-          setLiked(true);
-          if (disliked) setDisliked(false);
-          triggerLike();
+      const nextRating = liked ? 0 : 1;
+      if (nextRating > 0) {
+        setShowLikeAnimation(true);
+        if (likeAnimationTimeoutRef.current) clearTimeout(likeAnimationTimeoutRef.current);
+        likeAnimationTimeoutRef.current = setTimeout(() => setShowLikeAnimation(false), 800);
       }
+      onRate?.(paper.paper_id, nextRating);
   };
 
   const toggleDislike = (e?: React.MouseEvent) => {
       e?.stopPropagation();
-      if (disliked) {
-          setDisliked(false);
-      } else {
-          setDisliked(true);
-          if (liked) setLiked(false);
-      }
+      const nextRating = disliked ? 0 : -1;
+      onRate?.(paper.paper_id, nextRating);
   };
 
   const handleInteraction = (e: React.MouseEvent) => {
@@ -147,27 +160,59 @@ const PaperCard: React.FC<PaperCardProps> = ({
         {/* Slide 1: Main Image */}
         <div className="relative w-full h-full shrink-0 snap-center overflow-hidden">
              {/* Background Blur Layer */}
-            <div 
-                className="absolute inset-0 z-0"
-                style={{
-                backgroundImage: `url(${mainImageUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                filter: 'blur(90px) opacity(0.25) saturate(1.8)',
-                transform: 'scale(1.2)' 
-                }}
-            />
+              <div 
+                  className={`absolute inset-0 z-0 ${mainImageError ? 'bg-slate-100' : ''}`}
+                  style={
+                    mainImageError
+                      ? undefined
+                      : {
+                          backgroundImage: `url(${mainImageUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          filter: 'blur(90px) opacity(0.25) saturate(1.8)',
+                          transform: 'scale(1.2)' 
+                        }
+                  }
+              />
             {/* Main Image Layer */}
             <div className="absolute inset-0 z-10 flex items-center justify-center pt-24 pb-12 px-6">
-                <img 
-                    src={mainImageUrl} 
-                    alt={paper.title}
-                    className="w-full h-full object-contain drop-shadow-2xl rounded-sm transition-transform duration-500 ease-out"
-                    loading={priority ? "eager" : "lazy"}
-                    // @ts-ignore - React 19 supports fetchPriority
-                    fetchPriority={isActive ? "high" : "auto"}
-                    draggable={false}
-                />
+              <div className="w-full h-full max-w-[440px] mx-auto flex items-center justify-center drop-shadow-2xl">
+                {mainImageError ? (
+                  <div className="w-full h-full flex flex-col items-center justify-start bg-slate-50 text-slate-600 border border-slate-200 rounded-sm px-4 pt-6 text-center gap-3">
+                    <div className="w-[90%] text-sm font-semibold text-slate-800 line-clamp-2 mt-12 mb-2">{paper.title}</div>
+                    <div className="w-[90%] text-xs text-slate-500 line-clamp-2 mb-4">{paper.authors}</div>
+                    <div className="w-[90%] flex flex-col items-center gap-2 mx-auto">
+                      {hasTeaser === false ? (
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Teaser unavailable</div>
+                      ) : (
+                        <img
+                          src={teaserImageUrl}
+                          alt="Teaser Figure"
+                          className="w-full max-w-full h-auto max-h-48 object-contain rounded-sm shadow-sm"
+                          loading="lazy"
+                          draggable={false}
+                          onLoad={() => setHasTeaser(true)}
+                          onError={() => setHasTeaser(false)}
+                        />
+                      )}
+                    </div>
+                    {paper.abstract && (
+                      <div className="w-[90%] text-[11px] text-slate-500 leading-snug line-clamp-4 mx-auto">{paper.abstract}</div>
+                    )}
+                  </div>
+                ) : (
+          <img 
+            src={mainImageUrl} 
+            alt={paper.title}
+            className="w-full h-full max-w-[720px] object-contain drop-shadow-2xl rounded-sm transition-transform duration-500 ease-out"
+            loading={priority ? "eager" : "lazy"}
+            // @ts-ignore - React 19 supports fetchPriority
+            fetchPriority={isActive ? "high" : "auto"}
+            draggable={false}
+            onError={() => setMainImageError(true)}
+          />
+                )}
+              </div>
             </div>
         </div>
 
@@ -246,8 +291,11 @@ const PaperCard: React.FC<PaperCardProps> = ({
           <h2 className="text-xl md:text-3xl font-black leading-tight text-slate-900 line-clamp-3 tracking-tight drop-shadow-sm">
             {paper.title}
           </h2>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-             {currentImageIndex === 1 ? 'Tap to expand image' : 'Tap to view details'}
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="text-slate-500">
+              {new Date(paper.published_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+            </span>
+            <span>{currentImageIndex === 1 ? 'Tap to expand image' : 'Tap to view details'}</span>
           </div>
       </div>
 
@@ -262,7 +310,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </button>
-          <span className="text-[10px] font-bold text-slate-400/80">{paper.total_likes + (liked ? 1 : 0)}</span>
+          <span className="text-[10px] font-bold text-slate-400/80">{paper.total_likes}</span>
         </div>
 
         {/* Dislike */}
@@ -317,6 +365,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
       <CollectionDrawer
         paper={paper}
         currentCollections={collections}
+        availableCollections={availableCollections}
+        collectionIdMap={collectionIdMap}
         onUpdate={setCollections}
         isOpen={isCollectionOpen}
         onClose={() => setIsCollectionOpen(false)}

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PaperData, Collection } from '../types';
-import { PAPERS_DATA } from '../constants';
+import { addCollectionClient, removeCollectionClient } from '../services/collectionsClient';
 
 interface CollectionDrawerProps {
   paper: PaperData;
   currentCollections: Collection[];
+        availableCollections: Collection[];
+    collectionIdMap?: Record<string, string>;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (newCollections: Collection[]) => void;
@@ -13,6 +15,8 @@ interface CollectionDrawerProps {
 const CollectionDrawer: React.FC<CollectionDrawerProps> = ({ 
     paper, 
     currentCollections, 
+        availableCollections,
+    collectionIdMap = {},
     isOpen, 
     onClose,
     onUpdate
@@ -20,6 +24,8 @@ const CollectionDrawer: React.FC<CollectionDrawerProps> = ({
   const [inputText, setInputText] = useState('');
   const [shouldRender, setShouldRender] = useState(false);
   const [show, setShow] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,19 +40,20 @@ const CollectionDrawer: React.FC<CollectionDrawerProps> = ({
     }
   }, [isOpen]);
 
-  const globalColors = useMemo(() => {
-      const map: Record<string, string> = {};
-      Object.values(PAPERS_DATA).forEach(p => {
-          p.collections.forEach(c => {
-              map[c.name] = c.color;
-          });
-      });
-      return map;
-  }, []);
+    const globalColors = useMemo(() => {
+            const map: Record<string, string> = {};
+            availableCollections.forEach(c => {
+                map[c.name] = c.color;
+            });
+            currentCollections.forEach(c => {
+                map[c.name] = map[c.name] || c.color;
+            });
+            return map;
+    }, [availableCollections, currentCollections]);
 
   const allExistingCollections = useMemo(() => {
     const names = new Set(Object.keys(globalColors));
-    currentCollections.forEach(c => names.add(c.name));
+        currentCollections.forEach(c => names.add(c.name));
     return Array.from(names).sort();
   }, [globalColors, currentCollections]);
 
@@ -58,32 +65,72 @@ const CollectionDrawer: React.FC<CollectionDrawerProps> = ({
       return globalColors[name] || '#cbd5e1'; 
   };
 
-  const handleToggle = (name: string) => {
-    const exists = currentCollections.some(c => c.name === name);
-    let newCols: Collection[];
+    const handleToggle = async (name: string) => {
+        const exists = currentCollections.some(c => c.name === name);
+        let newCols: Collection[];
 
-    if (exists) {
-        newCols = currentCollections.filter(c => c.name !== name);
-    } else {
-        newCols = [...currentCollections, { name, color: getCollectionColor(name) }];
-    }
-    
-    onUpdate(newCols);
+        if (exists) {
+                newCols = currentCollections.filter(c => c.name !== name);
+        } else {
+                newCols = [...currentCollections, { name, color: getCollectionColor(name) }];
+        }
+
+        setErrorMessage(null);
+        onUpdate(newCols);
+
+        try {
+            setIsSaving(true);
+                    if (exists) {
+                        const collection_id = collectionIdMap[name];
+                        const result = await removeCollectionClient(name, paper.paper_id, collection_id);
+                if (!result?.success) {
+                    throw new Error(result?.error || 'Remove collection failed');
+                }
+            } else {
+                        const collection_id = collectionIdMap[name];
+                        const result = await addCollectionClient(name, paper.paper_id, collection_id);
+                if (!result?.success) {
+                    throw new Error(result?.error || 'Add collection failed');
+                }
+            }
+        } catch (err: any) {
+            console.error('Toggle collection failed', err);
+            onUpdate(currentCollections);
+            setErrorMessage(err?.message || 'Failed to update collection');
+        } finally {
+            setIsSaving(false);
+        }
 
     if (name.toLowerCase() === inputText.toLowerCase()) {
         setInputText('');
     }
   };
 
-  const handleCreate = () => {
+        const handleCreate = async () => {
     if (!inputText.trim()) return;
     const name = inputText.trim();
     
-    if (!currentCollections.some(c => c.name === name)) {
-        const newCol: Collection = { name, color: getCollectionColor(name) };
-        onUpdate([...currentCollections, newCol]);
-    }
-    setInputText('');
+        if (!currentCollections.some(c => c.name === name)) {
+                const newCol: Collection = { name, color: getCollectionColor(name) };
+                const optimistic = [...currentCollections, newCol];
+                setErrorMessage(null);
+                setIsSaving(true);
+                onUpdate(optimistic);
+
+                try {
+                    const result = await addCollectionClient(name, paper.paper_id);
+                    if (!result?.success) {
+                        throw new Error(result?.error || 'Add collection failed');
+                    }
+                } catch (err: any) {
+                    console.error('Add collection failed', err);
+                    onUpdate(currentCollections);
+                    setErrorMessage(err?.message || 'Failed to add collection');
+                } finally {
+                    setIsSaving(false);
+                }
+        }
+        setInputText('');
   };
 
   if (!shouldRender) return null;
@@ -138,8 +185,17 @@ const CollectionDrawer: React.FC<CollectionDrawerProps> = ({
                     }}
                     autoFocus
                 />
+                {isSaving && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">Saving…</div>
+                )}
             </div>
         </div>
+
+        {errorMessage && (
+          <div className="px-6 pb-2 text-sm text-red-500">
+            {errorMessage}
+          </div>
+        )}
 
         {/* "Create New" Action */}
         {inputText && !allExistingCollections.some(c => c.toLowerCase() === inputText.toLowerCase()) && (
