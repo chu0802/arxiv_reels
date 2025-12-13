@@ -140,8 +140,8 @@ const CollectionDrawer: React.FC<CollectionDrawerProps> = ({
         className={`fixed inset-0 z-[70] flex flex-col justify-end bg-slate-900/10 backdrop-blur-sm transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
     >
-      <div 
-        className={`w-full bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh] transition-transform duration-300 transform ${show ? 'translate-y-0' : 'translate-y-full'}`}
+            <div 
+                className={`w-full bg-white rounded-t-3xl shadow-2xl flex flex-col h-[80vh] max-h-[80vh] transition-transform duration-300 transform ${show ? 'translate-y-0' : 'translate-y-full'}`}
         onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
