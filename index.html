@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ArXiv Reels</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.5s ease-out',
+              'like-heart': 'likeHeart 0.8s ease-in-out forwards',
+              'zoom-rotate-in': 'zoomRotateIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'zoom-rotate-out': 'zoomRotateOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'zoom-in': 'zoomIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'zoom-out': 'zoomOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'fade-in': 'fadeIn 0.5s ease-out forwards',
+              'fade-out': 'fadeOut 0.5s ease-out forwards',
+            },
+            keyframes: {
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              likeHeart: {
+                '0%': { transform: 'scale(0) rotate(-15deg)', opacity: '0' },
+                '15%': { transform: 'scale(1.2) rotate(-15deg)', opacity: '1' },
+                '30%': { transform: 'scale(0.9) rotate(-15deg)', opacity: '1' },
+                '45%': { transform: 'scale(1) rotate(-15deg)', opacity: '1' },
+                '80%': { transform: 'scale(1) rotate(-15deg)', opacity: '1' },
+                '100%': { transform: 'scale(0.8) translateY(-50px) rotate(-15deg)', opacity: '0' },
+              },
+              zoomRotateIn: {
+                '0%': { opacity: '0', transform: 'scale(0.8) rotate(0deg)' },
+                '100%': { opacity: '1', transform: 'scale(1) rotate(90deg)' },
+              },
+              zoomRotateOut: {
+                '0%': { opacity: '1', transform: 'scale(1) rotate(90deg)' },
+                '100%': { opacity: '0', transform: 'scale(0.8) rotate(0deg)' },
+              },
+              zoomIn: {
+                '0%': { opacity: '0', transform: 'scale(0.8)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              zoomOut: {
+                '0%': { opacity: '1', transform: 'scale(1)' },
+                '100%': { opacity: '0', transform: 'scale(0.8)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              fadeOut: {
+                '0%': { opacity: '1' },
+                '100%': { opacity: '0' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+      
+      /* Modern Scrollbar */
+      .modern-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+      }
+      .modern-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .modern-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .modern-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+      }
+      .modern-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255, 255, 255, 0.4);
+      }
+
+      body {
+        background-color: #000;
+        color: white;
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
