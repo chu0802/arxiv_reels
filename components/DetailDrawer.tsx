@@ -13,7 +13,10 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   const [shouldRender, setShouldRender] = useState(false);
   const [show, setShow] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
 
   const displayCollections = collections || paper.collections;
   const teaserImageUrl = `https://www.scholar-inbox.com/teaser_figures/${paper.paper_id}.0.jpeg`;
@@ -37,6 +40,51 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
     }
   }, [isOpen]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
+      startY.current = e.touches[0].clientY;
+    } else {
+      startY.current = -1;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (startY.current === -1) return;
+    
+    // If content is scrolled, don't drag
+    if (scrollRef.current && scrollRef.current.scrollTop > 0) {
+      startY.current = -1;
+      setIsDragging(false);
+      setDragY(0);
+      return;
+    }
+
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - startY.current;
+
+    if (delta > 0) {
+      // Pulling down
+      setIsDragging(true);
+      // Add resistance
+      setDragY(delta * 0.5);
+    } else {
+      setIsDragging(false);
+      setDragY(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isDragging) {
+      if (dragY > 150) {
+        onClose();
+      } else {
+        setDragY(0);
+      }
+      setIsDragging(false);
+    }
+    startY.current = -1;
+  };
+
   if (!shouldRender) return null;
 
   return (
@@ -53,9 +101,13 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
             transition-transform duration-300 ease-out
         `}
         style={{ 
-            transform: show ? 'translateY(0)' : 'translateY(100%)' 
+            transform: show ? `translateY(${dragY}px)` : 'translateY(100%)',
+            transition: isDragging ? 'none' : undefined
         }}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Handle Bar */}
         <div className="w-full flex justify-center pt-3 pb-1 shrink-0 z-20" onClick={onClose}>
