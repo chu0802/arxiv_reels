@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { PaperData, Collection, TeaserFigure } from '../types';
 import DetailDrawer from './DetailDrawer';
 import CollectionDrawer from './CollectionDrawer';
@@ -12,6 +12,8 @@ interface PaperCardProps {
   collectionIdMap?: Record<string, string>;
   onRate?: (paperId: number, rating: number) => void | Promise<void>;
   onDetailOpenChange?: (isOpen: boolean) => void;
+  onHorizontalSwipeStart?: () => void; // Notify parent to lock vertical scroll
+  onHorizontalSwipeEnd?: () => void;   // Notify parent to unlock vertical scroll
 }
 
 const PaperCard: React.FC<PaperCardProps> = ({ 
@@ -22,7 +24,9 @@ const PaperCard: React.FC<PaperCardProps> = ({
   availableCollections,
   collectionIdMap,
     onRate,
-    onDetailOpenChange
+    onDetailOpenChange,
+    onHorizontalSwipeStart,
+    onHorizontalSwipeEnd
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
@@ -129,27 +133,70 @@ const PaperCard: React.FC<PaperCardProps> = ({
 
   // Horizontal swipe handling for carousel - using transform for silky smooth feel
   const carouselStartX = useRef(0);
+  const carouselStartY = useRef(0);
   const carouselLastX = useRef(0);
   const carouselVelocity = useRef(0);
   const carouselLastTime = useRef(0);
   const [dragX, setDragX] = useState(0);
   const [isCarouselDragging, setIsCarouselDragging] = useState(false);
+  const swipeDirection = useRef<'none' | 'horizontal' | 'vertical'>('none');
+  const DIRECTION_LOCK_THRESHOLD = 10; // pixels to determine direction
 
-  const handleCarouselTouchStart = (e: React.TouchEvent) => {
-    if (!hasTeasers) return;
+  // Preload teaser images when card becomes priority or active
+  useEffect(() => {
+    if ((priority || isActive) && hasTeasers) {
+      teaserFigures.forEach((teaser) => {
+        const img = new Image();
+        img.src = `https://www.scholar-inbox.com${teaser.imageUrl}`;
+      });
+    }
+  }, [priority, isActive, hasTeasers, teaserFigures]);
+
+  const handleCarouselTouchStart = useCallback((e: React.TouchEvent) => {
+    // Reset direction lock on new touch
+    swipeDirection.current = 'none';
     carouselStartX.current = e.touches[0].clientX;
+    carouselStartY.current = e.touches[0].clientY;
     carouselLastX.current = e.touches[0].clientX;
     carouselLastTime.current = Date.now();
     carouselVelocity.current = 0;
-    setIsCarouselDragging(true);
-  };
+  }, []);
 
-  const handleCarouselTouchMove = (e: React.TouchEvent) => {
-    if (!isCarouselDragging || !hasTeasers) return;
+  const handleCarouselTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!hasTeasers) return;
     
     const currentX = e.touches[0].clientX;
-    const currentTime = Date.now();
+    const currentY = e.touches[0].clientY;
     const deltaX = currentX - carouselStartX.current;
+    const deltaY = currentY - carouselStartY.current;
+    
+    // Determine direction if not locked yet
+    if (swipeDirection.current === 'none') {
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+      
+      if (absX > DIRECTION_LOCK_THRESHOLD || absY > DIRECTION_LOCK_THRESHOLD) {
+        if (absX > absY * 1.2) {
+          // Horizontal swipe - lock and notify parent
+          swipeDirection.current = 'horizontal';
+          setIsCarouselDragging(true);
+          onHorizontalSwipeStart?.();
+        } else {
+          // Vertical swipe - let parent handle it
+          swipeDirection.current = 'vertical';
+          return;
+        }
+      } else {
+        // Not enough movement yet
+        return;
+      }
+    }
+    
+    // If locked to vertical, ignore
+    if (swipeDirection.current === 'vertical') return;
+    
+    // Horizontal swipe logic
+    const currentTime = Date.now();
     
     // Calculate velocity for momentum
     const timeDiff = currentTime - carouselLastTime.current;
@@ -170,13 +217,29 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
     
     setDragX(adjustedDelta);
-  };
+    
+    // Prevent vertical scroll while horizontal swiping
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+  }, [hasTeasers, currentImageIndex, totalSlides, onHorizontalSwipeStart]);
 
-  const handleCarouselTouchEnd = () => {
-    if (!isCarouselDragging || !hasTeasers) return;
+  const handleCarouselTouchEnd = useCallback(() => {
+    // If was horizontal swiping, notify parent
+    if (swipeDirection.current === 'horizontal') {
+      onHorizontalSwipeEnd?.();
+    }
+    
+    // If not horizontal or no teasers, just reset
+    if (swipeDirection.current !== 'horizontal' || !hasTeasers) {
+      swipeDirection.current = 'none';
+      setIsCarouselDragging(false);
+      setDragX(0);
+      return;
+    }
     
     const containerWidth = window.innerWidth;
-    const threshold = containerWidth * 0.2; // 20% threshold
+    const threshold = containerWidth * 0.15; // 15% threshold
     const velocityThreshold = 0.3; // Flick gesture threshold
     
     let targetIndex = currentImageIndex;
@@ -204,8 +267,9 @@ const PaperCard: React.FC<PaperCardProps> = ({
     setCurrentImageIndex(targetIndex);
     setDragX(0);
     setIsCarouselDragging(false);
+    swipeDirection.current = 'none';
     carouselVelocity.current = 0;
-  };
+  }, [hasTeasers, currentImageIndex, totalSlides, dragX, onHorizontalSwipeEnd]);
 
   // Calculate carousel transform
   const getCarouselTransform = () => {
