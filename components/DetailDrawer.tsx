@@ -7,9 +7,10 @@ interface DetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onTeaserClick?: () => void;
+  onDragProgress?: (progress: number) => void; // 0 = closed position, 1 = fully open
 }
 
-const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen, onClose, onTeaserClick }) => {
+const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen, onClose, onTeaserClick, onDragProgress }) => {
   const [shouldRender, setShouldRender] = useState(false);
   const [show, setShow] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -121,6 +122,38 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
     velocity.current = 0;
   };
 
+  // Smooth close with animation (for button clicks)
+  const handleSmoothClose = () => {
+    const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
+    setIsClosing(true);
+    setDragY(drawerHeight);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
+  // Notify parent of drag progress for blur transition
+  useEffect(() => {
+    if (!onDragProgress) return;
+    
+    const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
+    
+    if (!show) {
+      // Drawer is closed or closing
+      onDragProgress(0);
+    } else if (isClosing) {
+      // Animating to close
+      onDragProgress(0);
+    } else if (isDragging || dragY > 0) {
+      // Currently dragging - calculate progress (1 = fully open, 0 = fully closed)
+      const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
+      onDragProgress(progress);
+    } else {
+      // Fully open
+      onDragProgress(1);
+    }
+  }, [show, dragY, isDragging, isClosing, onDragProgress]);
+
   if (!shouldRender) return null;
 
   // Calculate dynamic transition based on state
@@ -135,40 +168,35 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
 
   return (
   <div 
-    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center backdrop-blur-sm overscroll-none ${show ? 'opacity-100' : 'opacity-0'}`}
+    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center backdrop-blur-sm overscroll-none pointer-events-none ${show ? 'opacity-100' : 'opacity-0'}`}
     style={{
       backgroundColor: `rgba(15, 23, 42, ${0.1 * backdropOpacity})`,
       transition: isDragging ? 'none' : 'opacity 0.3s ease-out, background-color 0.3s ease-out'
-    }}
-    onClick={(e) => {
-      e.stopPropagation();
-      onClose();
     }}
     >
       <div 
         ref={drawerRef}
         className={`
-            w-full h-[85vh] md:h-[90vh] md:max-w-4xl bg-white md:rounded-3xl rounded-t-3xl flex flex-col shadow-2xl overflow-hidden relative
+            w-full h-[85vh] md:h-[90vh] md:max-w-4xl bg-white md:rounded-3xl rounded-t-3xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto
         `}
         style={{ 
             transform: show ? `translateY(${dragY}px)` : 'translateY(100%)',
             transition: getTransition(),
             willChange: 'transform'
         }}
-        onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {/* Handle Bar */}
-        <div className="w-full flex justify-center pt-3 pb-1 shrink-0 z-20" onClick={onClose}>
+        <div className="w-full flex justify-center pt-3 pb-1 shrink-0 z-20 cursor-pointer" onClick={handleSmoothClose}>
             <div className="w-12 h-1.5 bg-slate-200/80 rounded-full"></div>
         </div>
 
         {/* Header with close */}
         <div className="absolute top-5 right-6 z-10">
           <button 
-            onClick={onClose}
+            onClick={handleSmoothClose}
             className="p-2.5 bg-slate-100/50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 rounded-full transition-all"
           >
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

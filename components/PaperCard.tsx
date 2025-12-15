@@ -37,6 +37,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
   const [collections, setCollections] = useState(paper.collections);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hasTeaser, setHasTeaser] = useState<boolean | null>(null); // null = loading, true/false
+  const [detailDragProgress, setDetailDragProgress] = useState(0); // 0 = closed, 1 = fully open
   
   // Ref to handle click debounce
   const clickTimeoutRef = useRef<any>(null);
@@ -155,10 +156,24 @@ const PaperCard: React.FC<PaperCardProps> = ({
     onDetailOpenChange?.(false);
   }, [onDetailOpenChange]);
 
+  // Calculate blur based on detail drawer state
+  const getBlurStyle = () => {
+    if (!isDetailOpen) return {};
+    // When drawer is fully open (progress=1), full blur. When dragging down (progress->0), less blur
+    const blurAmount = detailDragProgress * 8; // Max 8px blur
+    return {
+      filter: `blur(${blurAmount}px)`,
+      transition: detailDragProgress === 1 || detailDragProgress === 0 
+        ? 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)' 
+        : 'none'
+    };
+  };
+
   return (
     <>
     <div 
       className="relative w-full h-full snap-start shrink-0 overflow-hidden text-slate-900 bg-white select-none cursor-pointer group"
+      style={getBlurStyle()}
       onClick={handleInteraction}
     >
       {/* Horizontal Carousel Container */}
@@ -372,6 +387,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onTeaserClick={openTeaser}
+        onDragProgress={setDetailDragProgress}
       />
 
       <CollectionDrawer
