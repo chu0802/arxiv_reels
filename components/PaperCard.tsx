@@ -6,6 +6,7 @@ import CollectionDrawer from './CollectionDrawer';
 interface PaperCardProps {
   paper: PaperData;
   isActive: boolean;
+  shouldLoadImages: boolean; // Control when to actually load images
   availableCollections: Collection[];
   collectionIdMap?: Record<string, string>;
   onRate?: (paperId: number, rating: number) => void | Promise<void>;
@@ -14,7 +15,8 @@ interface PaperCardProps {
 
 const PaperCard: React.FC<PaperCardProps> = ({ 
     paper, 
-    isActive, 
+    isActive,
+    shouldLoadImages,
   availableCollections,
   collectionIdMap,
     onRate,
@@ -218,7 +220,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
               <div 
                   className={`absolute inset-0 z-0 ${mainImageError ? 'bg-slate-100' : ''}`}
                   style={
-                    mainImageError
+                    mainImageError || !shouldLoadImages
                       ? undefined
                       : {
                           backgroundImage: `url(${mainImageUrl})`,
@@ -239,7 +241,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
                     <div className="w-[90%] flex flex-col items-center gap-2 mx-auto">
                       {!hasTeasers ? (
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Teaser unavailable</div>
-                      ) : (
+                      ) : shouldLoadImages ? (
                         <img
                           src={getTeaserFullUrl(teaserFigures[0])}
                           alt="Teaser Figure"
@@ -247,13 +249,13 @@ const PaperCard: React.FC<PaperCardProps> = ({
                           loading="lazy"
                           draggable={false}
                         />
-                      )}
+                      ) : null}
                     </div>
                     {paper.abstract && (
                       <div className="w-[90%] text-[11px] text-slate-500 leading-snug line-clamp-4 mx-auto">{paper.abstract}</div>
                     )}
                   </div>
-                ) : (
+                ) : shouldLoadImages ? (
           <img 
             src={mainImageUrl} 
             alt={paper.title}
@@ -264,13 +266,17 @@ const PaperCard: React.FC<PaperCardProps> = ({
             draggable={false}
             onError={() => setMainImageError(true)}
           />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="h-10 w-10 border-4 border-slate-200 border-t-slate-400 rounded-full animate-spin" />
+                  </div>
                 )}
               </div>
             </div>
         </div>
 
         {/* Teaser Slides - Render each teaser figure */}
-        {teaserFigures.map((teaser, index) => (
+        {hasTeasers && shouldLoadImages && teaserFigures.map((teaser, index) => (
             <div key={index} className="relative w-full h-full shrink-0 snap-center snap-always overflow-hidden bg-white">
                  {/* Teaser Background Blur */}
                  <div 

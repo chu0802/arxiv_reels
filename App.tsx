@@ -419,6 +419,10 @@ function App() {
       >
         {/* Papers List */}
         {papers.map((paper, index) => {
+          // Only load images for papers that are close to the active one
+          const distance = Math.abs(index - activePaperIndex);
+          const shouldLoadImages = distance <= 1 || index < INITIAL_PRELOAD_COUNT;
+          
           return (
             <div 
               key={paper.paper_id} 
@@ -427,7 +431,8 @@ function App() {
             >
               <PaperCard 
                 paper={paper} 
-                isActive={index === activePaperIndex} 
+                isActive={index === activePaperIndex}
+                shouldLoadImages={shouldLoadImages}
                 availableCollections={allCollections}
                 collectionIdMap={collectionIdMap}
                 onRate={handleRate}
