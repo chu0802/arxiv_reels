@@ -248,7 +248,12 @@ function App() {
     return () => observer.disconnect();
   }, [papers, activeFilter]);
 
-  // Preload images for current paper and neighbors
+  // Track which papers have been preloaded to avoid redundant requests
+  const preloadedPapersRef = useRef<Set<number>>(new Set());
+
+  // Initial preload: load first N papers when data arrives
+  const INITIAL_PRELOAD_COUNT = 3;
+  
   useEffect(() => {
     if (papers.length === 0) return;
 
@@ -263,7 +268,58 @@ function App() {
     const getTeaserUrl = (imageUrl: string) => 
       `https://www.scholar-inbox.com${imageUrl}`;
 
-    // Preload for indices: current, previous, next
+    const preloadPaper = (paper: PaperData) => {
+      if (preloadedPapersRef.current.has(paper.paper_id)) return;
+      preloadedPapersRef.current.add(paper.paper_id);
+
+      // Preload main figure
+      preloadImage(getMainImageUrl(paper));
+
+      // Preload all teaser figures
+      if (paper.teaser_figures) {
+        paper.teaser_figures.forEach(teaser => {
+          preloadImage(getTeaserUrl(teaser.imageUrl));
+        });
+      }
+    };
+
+    // Initial load: preload first N papers
+    for (let i = 0; i < Math.min(INITIAL_PRELOAD_COUNT, papers.length); i++) {
+      preloadPaper(papers[i]);
+    }
+  }, [papers]);
+
+  // Preload neighbors when active paper changes
+  useEffect(() => {
+    if (papers.length === 0) return;
+
+    const preloadImage = (url: string) => {
+      const img = new Image();
+      img.src = url;
+    };
+
+    const getMainImageUrl = (paper: PaperData) => 
+      `https://paper-assets.alphaxiv.org/image/${paper.arxiv_id}v1.png`;
+
+    const getTeaserUrl = (imageUrl: string) => 
+      `https://www.scholar-inbox.com${imageUrl}`;
+
+    const preloadPaper = (paper: PaperData) => {
+      if (preloadedPapersRef.current.has(paper.paper_id)) return;
+      preloadedPapersRef.current.add(paper.paper_id);
+
+      // Preload main figure
+      preloadImage(getMainImageUrl(paper));
+
+      // Preload all teaser figures
+      if (paper.teaser_figures) {
+        paper.teaser_figures.forEach(teaser => {
+          preloadImage(getTeaserUrl(teaser.imageUrl));
+        });
+      }
+    };
+
+    // Preload current and neighbors (previous, next)
     const indicesToPreload = [
       activePaperIndex,
       activePaperIndex - 1,
@@ -272,19 +328,16 @@ function App() {
 
     indicesToPreload.forEach(index => {
       const paper = papers[index];
-      if (!paper) return;
-
-      // Preload main figure
-      preloadImage(getMainImageUrl(paper));
-
-      // Preload all teaser figures for this paper
-      if (paper.teaser_figures) {
-        paper.teaser_figures.forEach(teaser => {
-          preloadImage(getTeaserUrl(teaser.imageUrl));
-        });
+      if (paper) {
+        preloadPaper(paper);
       }
     });
   }, [activePaperIndex, papers]);
+
+  // Reset preload cache when papers list changes (e.g., filter change)
+  useEffect(() => {
+    preloadedPapersRef.current.clear();
+  }, [activeFilter]);
   if (loading) {
     return (
       <div className="bg-white text-slate-900 h-[100dvh] w-full flex items-center justify-center">
