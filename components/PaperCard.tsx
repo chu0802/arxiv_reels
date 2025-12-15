@@ -406,27 +406,28 @@ const PaperCard: React.FC<PaperCardProps> = ({
         </div>
 
       </div>
-      
-      <DetailDrawer
-        paper={paper}
-        collections={collections}
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        onTeaserClick={openTeaser}
-        onDragProgress={handleDragProgress}
-      />
-
-      <CollectionDrawer
-        paper={paper}
-        currentCollections={collections}
-        availableCollections={availableCollections}
-        collectionIdMap={collectionIdMap}
-        onUpdate={setCollections}
-        isOpen={isCollectionOpen}
-        onClose={() => setIsCollectionOpen(false)}
-      />
 
     </div>
+    
+    {/* Drawers - outside PaperCard div to avoid blur inheritance */}
+    <DetailDrawer
+      paper={paper}
+      collections={collections}
+      isOpen={isDetailOpen}
+      onClose={() => setIsDetailOpen(false)}
+      onTeaserClick={openTeaser}
+      onDragProgress={handleDragProgress}
+    />
+
+    <CollectionDrawer
+      paper={paper}
+      currentCollections={collections}
+      availableCollections={availableCollections}
+      collectionIdMap={collectionIdMap}
+      onUpdate={setCollections}
+      isOpen={isCollectionOpen}
+      onClose={() => setIsCollectionOpen(false)}
+    />
     
     {/* Full Screen Image Overlay */}
     {showFullScreenTeaser && (
