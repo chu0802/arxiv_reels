@@ -248,6 +248,43 @@ function App() {
     return () => observer.disconnect();
   }, [papers, activeFilter]);
 
+  // Preload images for current paper and neighbors
+  useEffect(() => {
+    if (papers.length === 0) return;
+
+    const preloadImage = (url: string) => {
+      const img = new Image();
+      img.src = url;
+    };
+
+    const getMainImageUrl = (paper: PaperData) => 
+      `https://paper-assets.alphaxiv.org/image/${paper.arxiv_id}v1.png`;
+
+    const getTeaserUrl = (imageUrl: string) => 
+      `https://www.scholar-inbox.com${imageUrl}`;
+
+    // Preload for indices: current, previous, next
+    const indicesToPreload = [
+      activePaperIndex,
+      activePaperIndex - 1,
+      activePaperIndex + 1
+    ].filter(i => i >= 0 && i < papers.length);
+
+    indicesToPreload.forEach(index => {
+      const paper = papers[index];
+      if (!paper) return;
+
+      // Preload main figure
+      preloadImage(getMainImageUrl(paper));
+
+      // Preload all teaser figures for this paper
+      if (paper.teaser_figures) {
+        paper.teaser_figures.forEach(teaser => {
+          preloadImage(getTeaserUrl(teaser.imageUrl));
+        });
+      }
+    });
+  }, [activePaperIndex, papers]);
   if (loading) {
     return (
       <div className="bg-white text-slate-900 h-[100dvh] w-full flex items-center justify-center">
@@ -329,13 +366,6 @@ function App() {
       >
         {/* Papers List */}
         {papers.map((paper, index) => {
-          // Preload Logic:
-          // 1. Priority (Images): Eagerly load full images for immediate neighbors (+/- 2)
-          // 2. Attributes (Metadata): Pre-calculate derived state (like teaser availability/layout) for a wider range (+/- 5)
-          const distance = Math.abs(index - activePaperIndex);
-          const isPriority = distance <= 2;
-          const isPreloadAttributes = distance <= 5;
-          
           return (
             <div 
               key={paper.paper_id} 
@@ -345,8 +375,6 @@ function App() {
               <PaperCard 
                 paper={paper} 
                 isActive={index === activePaperIndex} 
-                priority={isPriority}
-                preloadAttributes={isPreloadAttributes}
                 availableCollections={allCollections}
                 collectionIdMap={collectionIdMap}
                 onRate={handleRate}

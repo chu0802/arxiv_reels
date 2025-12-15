@@ -6,8 +6,6 @@ import CollectionDrawer from './CollectionDrawer';
 interface PaperCardProps {
   paper: PaperData;
   isActive: boolean;
-  priority?: boolean; // Controls eager loading for main images (heavy assets)
-  preloadAttributes?: boolean; // Controls checking of metadata/structure (e.g. teaser availability)
   availableCollections: Collection[];
   collectionIdMap?: Record<string, string>;
   onRate?: (paperId: number, rating: number) => void | Promise<void>;
@@ -17,8 +15,6 @@ interface PaperCardProps {
 const PaperCard: React.FC<PaperCardProps> = ({ 
     paper, 
     isActive, 
-    priority = false,
-    preloadAttributes = false,
   availableCollections,
   collectionIdMap,
     onRate,
@@ -127,15 +123,15 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
   };
 
-  // Preload teaser images when card becomes priority or active
+  // Preload teaser images when card becomes active (images are also preloaded in App.tsx for neighbors)
   useEffect(() => {
-    if ((priority || isActive) && hasTeasers) {
+    if (isActive && hasTeasers) {
       teaserFigures.forEach((teaser) => {
         const img = new Image();
         img.src = `https://www.scholar-inbox.com${teaser.imageUrl}`;
       });
     }
-  }, [priority, isActive, hasTeasers, teaserFigures]);
+  }, [isActive, hasTeasers, teaserFigures]);
 
   // Track current slide from native scroll
   const handleCarouselScroll = useCallback(() => {
@@ -262,7 +258,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
             src={mainImageUrl} 
             alt={paper.title}
             className="w-full h-full max-w-[720px] object-contain drop-shadow-2xl rounded-sm transition-transform duration-500 ease-out"
-            loading={priority ? "eager" : "lazy"}
+            loading={isActive ? "eager" : "lazy"}
             // @ts-ignore - React 19 supports fetchPriority
             fetchPriority={isActive ? "high" : "auto"}
             draggable={false}
@@ -292,7 +288,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
                         src={getTeaserFullUrl(teaser)} 
                         alt={`${teaser.figureType} ${teaser.figureNumber + 1}`}
                         className="w-full h-full object-contain drop-shadow-xl rounded-sm"
-                        loading={priority || index === 0 ? "eager" : "lazy"}
+                        loading={isActive ? "eager" : "lazy"}
                         draggable={false}
                     />
                 </div>
