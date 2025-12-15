@@ -127,8 +127,52 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
   };
 
+  // Horizontal swipe handling for carousel
+  const carouselStartX = useRef(0);
+  const carouselStartScrollLeft = useRef(0);
+  const isCarouselSwiping = useRef(false);
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    if (!scrollRef.current || !hasTeasers) return;
+    carouselStartX.current = e.touches[0].clientX;
+    carouselStartScrollLeft.current = scrollRef.current.scrollLeft;
+    isCarouselSwiping.current = true;
+    // Disable smooth scrolling during drag
+    scrollRef.current.style.scrollBehavior = 'auto';
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
+    if (!scrollRef.current || !isCarouselSwiping.current) return;
+    const deltaX = carouselStartX.current - e.touches[0].clientX;
+    scrollRef.current.scrollLeft = carouselStartScrollLeft.current + deltaX;
+  };
+
+  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
+    if (!scrollRef.current || !isCarouselSwiping.current) return;
+    isCarouselSwiping.current = false;
+    
+    const containerWidth = scrollRef.current.offsetWidth;
+    const deltaX = scrollRef.current.scrollLeft - carouselStartScrollLeft.current;
+    const threshold = containerWidth * 0.2; // 20% threshold to trigger page change
+    
+    let targetIndex = currentImageIndex;
+    
+    if (deltaX > threshold) {
+      // Swiped left -> next slide (but limit to one page)
+      targetIndex = Math.min(currentImageIndex + 1, totalSlides - 1);
+    } else if (deltaX < -threshold) {
+      // Swiped right -> previous slide (but limit to one page)
+      targetIndex = Math.max(currentImageIndex - 1, 0);
+    }
+    
+    // Re-enable smooth scrolling and snap to target
+    scrollRef.current.style.scrollBehavior = 'smooth';
+    scrollRef.current.scrollLeft = targetIndex * containerWidth;
+    setCurrentImageIndex(targetIndex);
+  };
+
   const handleScroll = () => {
-      if (scrollRef.current) {
+      if (scrollRef.current && !isCarouselSwiping.current) {
           const index = Math.round(scrollRef.current.scrollLeft / scrollRef.current.offsetWidth);
           setCurrentImageIndex(index);
       }
@@ -202,6 +246,9 @@ const PaperCard: React.FC<PaperCardProps> = ({
         ref={scrollRef}
         className={`absolute inset-0 z-0 flex ${hasTeasers ? 'overflow-x-auto snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar`}
         onScroll={handleScroll}
+        onTouchStart={handleCarouselTouchStart}
+        onTouchMove={handleCarouselTouchMove}
+        onTouchEnd={handleCarouselTouchEnd}
         style={{ scrollBehavior: 'smooth' }}
       >
         {/* Slide 1: Main Image */}
