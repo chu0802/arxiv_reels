@@ -127,55 +127,94 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
   };
 
-  // Horizontal swipe handling for carousel
+  // Horizontal swipe handling for carousel - using transform for silky smooth feel
   const carouselStartX = useRef(0);
-  const carouselStartScrollLeft = useRef(0);
-  const isCarouselSwiping = useRef(false);
+  const carouselLastX = useRef(0);
+  const carouselVelocity = useRef(0);
+  const carouselLastTime = useRef(0);
+  const [dragX, setDragX] = useState(0);
+  const [isCarouselDragging, setIsCarouselDragging] = useState(false);
 
   const handleCarouselTouchStart = (e: React.TouchEvent) => {
-    if (!scrollRef.current || !hasTeasers) return;
+    if (!hasTeasers) return;
     carouselStartX.current = e.touches[0].clientX;
-    carouselStartScrollLeft.current = scrollRef.current.scrollLeft;
-    isCarouselSwiping.current = true;
-    // Disable smooth scrolling during drag
-    scrollRef.current.style.scrollBehavior = 'auto';
+    carouselLastX.current = e.touches[0].clientX;
+    carouselLastTime.current = Date.now();
+    carouselVelocity.current = 0;
+    setIsCarouselDragging(true);
   };
 
   const handleCarouselTouchMove = (e: React.TouchEvent) => {
-    if (!scrollRef.current || !isCarouselSwiping.current) return;
-    const deltaX = carouselStartX.current - e.touches[0].clientX;
-    scrollRef.current.scrollLeft = carouselStartScrollLeft.current + deltaX;
+    if (!isCarouselDragging || !hasTeasers) return;
+    
+    const currentX = e.touches[0].clientX;
+    const currentTime = Date.now();
+    const deltaX = currentX - carouselStartX.current;
+    
+    // Calculate velocity for momentum
+    const timeDiff = currentTime - carouselLastTime.current;
+    if (timeDiff > 0) {
+      carouselVelocity.current = (currentX - carouselLastX.current) / timeDiff;
+    }
+    carouselLastX.current = currentX;
+    carouselLastTime.current = currentTime;
+    
+    // Apply resistance at edges
+    let adjustedDelta = deltaX;
+    if (currentImageIndex === 0 && deltaX > 0) {
+      // At first slide, pulling right - add resistance
+      adjustedDelta = deltaX * 0.3;
+    } else if (currentImageIndex === totalSlides - 1 && deltaX < 0) {
+      // At last slide, pulling left - add resistance
+      adjustedDelta = deltaX * 0.3;
+    }
+    
+    setDragX(adjustedDelta);
   };
 
-  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
-    if (!scrollRef.current || !isCarouselSwiping.current) return;
-    isCarouselSwiping.current = false;
+  const handleCarouselTouchEnd = () => {
+    if (!isCarouselDragging || !hasTeasers) return;
     
-    const containerWidth = scrollRef.current.offsetWidth;
-    const deltaX = scrollRef.current.scrollLeft - carouselStartScrollLeft.current;
-    const threshold = containerWidth * 0.2; // 20% threshold to trigger page change
+    const containerWidth = window.innerWidth;
+    const threshold = containerWidth * 0.2; // 20% threshold
+    const velocityThreshold = 0.3; // Flick gesture threshold
     
     let targetIndex = currentImageIndex;
     
-    if (deltaX > threshold) {
-      // Swiped left -> next slide (but limit to one page)
-      targetIndex = Math.min(currentImageIndex + 1, totalSlides - 1);
-    } else if (deltaX < -threshold) {
-      // Swiped right -> previous slide (but limit to one page)
-      targetIndex = Math.max(currentImageIndex - 1, 0);
+    // Check velocity first (flick gesture)
+    if (Math.abs(carouselVelocity.current) > velocityThreshold) {
+      if (carouselVelocity.current < 0 && currentImageIndex < totalSlides - 1) {
+        // Flicked left -> next slide
+        targetIndex = currentImageIndex + 1;
+      } else if (carouselVelocity.current > 0 && currentImageIndex > 0) {
+        // Flicked right -> previous slide
+        targetIndex = currentImageIndex - 1;
+      }
+    } else {
+      // Check drag distance
+      if (dragX < -threshold && currentImageIndex < totalSlides - 1) {
+        // Dragged left -> next slide
+        targetIndex = currentImageIndex + 1;
+      } else if (dragX > threshold && currentImageIndex > 0) {
+        // Dragged right -> previous slide
+        targetIndex = currentImageIndex - 1;
+      }
     }
     
-    // Re-enable smooth scrolling and snap to target
-    scrollRef.current.style.scrollBehavior = 'smooth';
-    scrollRef.current.scrollLeft = targetIndex * containerWidth;
     setCurrentImageIndex(targetIndex);
+    setDragX(0);
+    setIsCarouselDragging(false);
+    carouselVelocity.current = 0;
   };
 
-  const handleScroll = () => {
-      if (scrollRef.current && !isCarouselSwiping.current) {
-          const index = Math.round(scrollRef.current.scrollLeft / scrollRef.current.offsetWidth);
-          setCurrentImageIndex(index);
-      }
+  // Calculate carousel transform
+  const getCarouselTransform = () => {
+    const baseOffset = -currentImageIndex * 100; // percentage
+    if (isCarouselDragging && hasTeasers) {
+      const dragPercent = (dragX / window.innerWidth) * 100;
+      return `translateX(calc(${baseOffset}% + ${dragPercent}%))`;
+    }
+    return `translateX(${baseOffset}%)`;
   };
 
   // Determine animation classes based on orientation
@@ -240,19 +279,22 @@ const PaperCard: React.FC<PaperCardProps> = ({
       className="relative w-full h-full snap-start shrink-0 overflow-hidden text-slate-900 bg-white select-none cursor-pointer group"
       style={getBlurStyle()}
       onClick={handleInteraction}
+      onTouchStart={handleCarouselTouchStart}
+      onTouchMove={handleCarouselTouchMove}
+      onTouchEnd={handleCarouselTouchEnd}
     >
-      {/* Horizontal Carousel Container */}
+      {/* Horizontal Carousel Container - using transform instead of scroll */}
       <div 
         ref={scrollRef}
-        className={`absolute inset-0 z-0 flex ${hasTeasers ? 'overflow-x-auto snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar`}
-        onScroll={handleScroll}
-        onTouchStart={handleCarouselTouchStart}
-        onTouchMove={handleCarouselTouchMove}
-        onTouchEnd={handleCarouselTouchEnd}
-        style={{ scrollBehavior: 'smooth' }}
+        className="absolute inset-0 z-0 flex"
+        style={{ 
+          transform: getCarouselTransform(),
+          transition: isCarouselDragging ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+          willChange: 'transform'
+        }}
       >
         {/* Slide 1: Main Image */}
-        <div className="relative w-full h-full shrink-0 snap-center overflow-hidden">
+        <div className="relative w-full h-full shrink-0 overflow-hidden">
              {/* Background Blur Layer */}
               <div 
                   className={`absolute inset-0 z-0 ${mainImageError ? 'bg-slate-100' : ''}`}
@@ -310,7 +352,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
 
         {/* Teaser Slides - Render each teaser figure */}
         {teaserFigures.map((teaser, index) => (
-            <div key={index} className="relative w-full h-full shrink-0 snap-center overflow-hidden bg-white">
+            <div key={index} className="relative w-full h-full shrink-0 overflow-hidden bg-white">
                  {/* Teaser Background Blur */}
                  <div 
                     className="absolute inset-0 z-0"
