@@ -168,6 +168,15 @@ function normalizePaper(raw: any): PaperData {
     abstract: String(raw.abstract ?? ''),
     relevance,
     collections,
+    // Parse teaser_figures array
+    teaser_figures: Array.isArray(raw.teaser_figures)
+      ? raw.teaser_figures.map((tf: any) => ({
+          caption: String(tf.caption ?? ''),
+          figureNumber: Number(tf.figureNumber ?? 0),
+          figureType: String(tf.figureType ?? 'Figure'),
+          imageUrl: String(tf.imageUrl ?? ''),
+        }))
+      : undefined,
   };
 }
 
