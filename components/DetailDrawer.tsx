@@ -225,6 +225,40 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       ref={scrollRef}
       className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-12 modern-scrollbar pt-4"
     >
+            {/* Teaser Image Section - Show at top when viewing a teaser */}
+            {currentTeaser && (
+                <div className="mb-8">
+                    <div 
+                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-lg cursor-zoom-in group relative"
+                        onClick={onTeaserClick}
+                    >
+                        <img 
+                            src={getTeaserFullUrl(currentTeaser)}
+                            alt={`${currentTeaser.figureType} ${currentTeaser.figureNumber}`}
+                            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={() => setImageError(true)}
+                        />
+                        {/* Expand hint */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                            <span className="px-4 py-2 bg-white/90 rounded-full text-sm font-bold text-slate-700 shadow-lg">
+                                Tap to expand
+                            </span>
+                        </div>
+                    </div>
+                    {/* Figure Caption */}
+                    {currentTeaser.caption && (
+                        <div className="mt-4 p-4 bg-slate-50/80 rounded-xl">
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                <span className="font-bold text-slate-800">
+                                    {currentTeaser.figureType} {currentTeaser.figureNumber + 1}:
+                                </span>{' '}
+                                {currentTeaser.caption}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Header Info */}
             <div className="mb-6 flex flex-wrap items-center gap-3">
                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg bg-slate-50 text-slate-500">
@@ -264,54 +298,6 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
                     {paper.authors}
                 </p>
             </div>
-
-            {/* Teaser Image Section (Only if available) */}
-            {currentTeaser && (
-                <div className="mb-10">
-                    <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            {currentTeaser.figureType} {currentTeaser.figureNumber}
-                        </h3>
-                    </div>
-                    <div 
-                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-sm cursor-zoom-in group relative"
-                        onClick={onTeaserClick}
-                    >
-                        <img 
-                            src={getTeaserFullUrl(currentTeaser)}
-                            alt={`${currentTeaser.figureType} ${currentTeaser.figureNumber}`}
-                            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={() => setImageError(true)}
-                        />
-                    </div>
-                    {/* Figure Caption */}
-                    {currentTeaser.caption && (
-                        <p className="mt-4 text-sm text-slate-600 leading-relaxed italic">
-                            <span className="font-semibold not-italic text-slate-700">
-                                {currentTeaser.figureType} {currentTeaser.figureNumber}:
-                            </span>{' '}
-                            {currentTeaser.caption}
-                        </p>
-                    )}
-                </div>
-            )}
-            {/* Fallback: show old teaser image if no currentTeaser but image loads */}
-            {!currentTeaser && !imageError && (
-                <div className="mb-10">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Preview</h3>
-                    <div 
-                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-sm cursor-zoom-in group relative"
-                        onClick={onTeaserClick}
-                    >
-                        <img 
-                            src={fallbackTeaserUrl}
-                            alt="Paper Preview"
-                            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={() => setImageError(true)}
-                        />
-                    </div>
-                </div>
-            )}
 
             {/* Abstract Section */}
             <div className="prose prose-slate prose-lg max-w-none mb-10">

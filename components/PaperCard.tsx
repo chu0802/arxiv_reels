@@ -115,12 +115,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
     } else {
         clickTimeoutRef.current = setTimeout(() => {
             clickTimeoutRef.current = null;
-            // If on the teaser slide (index 1), open full screen view
-            if (currentImageIndex === 1) {
-                openTeaser();
-            } else {
-                setIsDetailOpen(true);
-            }
+            // Always open DetailDrawer on single tap (for both main image and teaser)
+            setIsDetailOpen(true);
         }, 200); // Reduced from 250ms for faster response
     }
   };
