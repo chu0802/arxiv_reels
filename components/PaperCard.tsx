@@ -128,7 +128,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
             } else {
                 setIsDetailOpen(true);
             }
-        }, 250);
+        }, 200); // Reduced from 250ms for faster response
     }
   };
 

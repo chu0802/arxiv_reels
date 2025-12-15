@@ -34,10 +34,9 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       setDragY(0);
       // Reset error state when reopening
       setImageError(false);
+      // Single rAF is enough - reduces delay from ~32ms to ~16ms
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            setShow(true);
-        });
+        setShow(true);
       });
     } else {
       setShow(false);
