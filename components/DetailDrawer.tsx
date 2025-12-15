@@ -41,9 +41,11 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       setDragY(0);
       // Reset error state when reopening
       setImageError(false);
-      // Single rAF is enough - reduces delay from ~32ms to ~16ms
+      // Double rAF ensures the initial state is painted before animating
       requestAnimationFrame(() => {
-        setShow(true);
+        requestAnimationFrame(() => {
+          setShow(true);
+        });
       });
     } else {
       setShow(false);
@@ -51,7 +53,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
         setShouldRender(false);
         setIsClosing(false);
         setDragY(0);
-      }, 250); // Faster cleanup
+      }, 350); // Match animation duration
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
