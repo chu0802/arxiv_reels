@@ -6,10 +6,16 @@
   color-scheme: light;
 }
 
+/* Prevent pull-to-refresh on the entire app */
+html, body {
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   background-color: #000;
   color: #ffffff;
-  overscroll-behavior-y: none;
 }
 
 .no-scrollbar::-webkit-scrollbar {

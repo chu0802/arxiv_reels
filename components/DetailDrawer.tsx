@@ -185,14 +185,11 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
 
   return (
   <div 
-    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center overscroll-none ${show ? 'pointer-events-auto' : 'pointer-events-none'} ${show ? 'opacity-100' : 'opacity-0'}`}
+    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center overscroll-none pointer-events-none ${show ? 'opacity-100' : 'opacity-0'}`}
     style={{
       backgroundColor: `rgba(15, 23, 42, ${0.1 * backdropOpacity})`,
       transition: isDragging ? 'none' : 'opacity 0.3s ease-out, background-color 0.3s ease-out'
     }}
-    onTouchStart={(e) => e.stopPropagation()}
-    onTouchMove={(e) => e.stopPropagation()}
-    onTouchEnd={(e) => e.stopPropagation()}
     >
       <div 
         ref={drawerRef}
