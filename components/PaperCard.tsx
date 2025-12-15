@@ -158,39 +158,35 @@ const PaperCard: React.FC<PaperCardProps> = ({
   }, [onDetailOpenChange]);
 
   // Calculate blur based on detail drawer state
-  const getBlurStyle = () => {
-    // Show blur when drawer is open OR when it's transitioning (closing with animation)
-    if (!isDetailOpen && !isDetailTransitioning) return {};
-    
-    // When drawer is fully open (progress=1), full blur. When dragging down (progress->0), less blur
-    const blurAmount = detailDragProgress * 8; // Max 8px blur
+  // detailDragProgress: 0 = closed, 1 = fully open
+  // We want: blur when open (progress=1), clear when closed (progress=0)
+  const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
+  const blurAmount = detailDragProgress * 8; // Max 8px blur when fully open
+  
+  const getBlurStyle = (): React.CSSProperties => {
+    if (blurAmount === 0 && !isDetailTransitioning) {
+      return {};
+    }
     return {
       filter: `blur(${blurAmount}px)`,
-      // No transition during drag, smooth transition when snapping
-      transition: 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)'
+      transition: isDraggingDrawer ? 'none' : 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)'
     };
   };
 
   // Handle drag progress from DetailDrawer
-  const handleDragProgress = (progress: number) => {
+  const handleDragProgress = (progress: number, dragging: boolean) => {
     setDetailDragProgress(progress);
+    setIsDraggingDrawer(dragging);
     
-    // Start transitioning when progress starts changing
-    if (progress < 1 && progress > 0) {
+    // Track transitioning state
+    if (progress > 0 && progress < 1) {
       setIsDetailTransitioning(true);
-    }
-    
-    // When fully closed, end transition after animation completes
-    if (progress === 0) {
-      setIsDetailTransitioning(true);
-      // Wait for blur transition to complete
+    } else if (progress === 0) {
+      // Closing complete - keep transitioning for animation
       setTimeout(() => {
         setIsDetailTransitioning(false);
       }, 350);
-    }
-    
-    // When fully open
-    if (progress === 1) {
+    } else if (progress === 1) {
       setIsDetailTransitioning(false);
     }
   };

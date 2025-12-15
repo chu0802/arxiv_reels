@@ -7,7 +7,7 @@ interface DetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onTeaserClick?: () => void;
-  onDragProgress?: (progress: number) => void; // 0 = closed position, 1 = fully open
+  onDragProgress?: (progress: number, isDragging: boolean) => void; // 0 = closed position, 1 = fully open
 }
 
 const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen, onClose, onTeaserClick, onDragProgress }) => {
@@ -140,26 +140,26 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
     
     if (!shouldRender) {
       // Component not rendered
-      onDragProgress(0);
+      onDragProgress(0, false);
     } else if (!show) {
       // Drawer is animating in (show=false but shouldRender=true) or closing
       // During opening animation, gradually increase blur
       // During closing, this means we're in the final close phase
-      onDragProgress(0);
+      onDragProgress(0, false);
     } else if (isClosing) {
       // Animating to close with smooth animation
-      onDragProgress(0);
+      onDragProgress(0, false);
     } else if (isDragging) {
       // Currently dragging - calculate progress (1 = fully open, 0 = fully closed)
       const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
-      onDragProgress(progress);
+      onDragProgress(progress, true);
     } else if (dragY > 0) {
       // Snapping back or animating
       const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
-      onDragProgress(progress);
+      onDragProgress(progress, false);
     } else {
       // Fully open and stable
-      onDragProgress(1);
+      onDragProgress(1, false);
     }
   }, [shouldRender, show, dragY, isDragging, isClosing, onDragProgress]);
 
@@ -177,7 +177,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
 
   return (
   <div 
-    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center backdrop-blur-sm overscroll-none pointer-events-none ${show ? 'opacity-100' : 'opacity-0'}`}
+    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center overscroll-none pointer-events-none ${show ? 'opacity-100' : 'opacity-0'}`}
     style={{
       backgroundColor: `rgba(15, 23, 42, ${0.1 * backdropOpacity})`,
       transition: isDragging ? 'none' : 'opacity 0.3s ease-out, background-color 0.3s ease-out'
