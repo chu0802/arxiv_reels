@@ -38,6 +38,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hasTeaser, setHasTeaser] = useState<boolean | null>(null); // null = loading, true/false
   const [detailDragProgress, setDetailDragProgress] = useState(0); // 0 = closed, 1 = fully open
+  const [isDetailTransitioning, setIsDetailTransitioning] = useState(false); // Track if drawer is animating
   
   // Ref to handle click debounce
   const clickTimeoutRef = useRef<any>(null);
@@ -158,15 +159,40 @@ const PaperCard: React.FC<PaperCardProps> = ({
 
   // Calculate blur based on detail drawer state
   const getBlurStyle = () => {
-    if (!isDetailOpen) return {};
+    // Show blur when drawer is open OR when it's transitioning (closing with animation)
+    if (!isDetailOpen && !isDetailTransitioning) return {};
+    
     // When drawer is fully open (progress=1), full blur. When dragging down (progress->0), less blur
     const blurAmount = detailDragProgress * 8; // Max 8px blur
     return {
       filter: `blur(${blurAmount}px)`,
-      transition: detailDragProgress === 1 || detailDragProgress === 0 
-        ? 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)' 
-        : 'none'
+      // No transition during drag, smooth transition when snapping
+      transition: 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)'
     };
+  };
+
+  // Handle drag progress from DetailDrawer
+  const handleDragProgress = (progress: number) => {
+    setDetailDragProgress(progress);
+    
+    // Start transitioning when progress starts changing
+    if (progress < 1 && progress > 0) {
+      setIsDetailTransitioning(true);
+    }
+    
+    // When fully closed, end transition after animation completes
+    if (progress === 0) {
+      setIsDetailTransitioning(true);
+      // Wait for blur transition to complete
+      setTimeout(() => {
+        setIsDetailTransitioning(false);
+      }, 350);
+    }
+    
+    // When fully open
+    if (progress === 1) {
+      setIsDetailTransitioning(false);
+    }
   };
 
   return (
@@ -387,7 +413,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onTeaserClick={openTeaser}
-        onDragProgress={setDetailDragProgress}
+        onDragProgress={handleDragProgress}
       />
 
       <CollectionDrawer

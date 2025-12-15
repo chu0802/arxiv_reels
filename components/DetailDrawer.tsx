@@ -138,21 +138,30 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
     
     const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
     
-    if (!show) {
-      // Drawer is closed or closing
+    if (!shouldRender) {
+      // Component not rendered
+      onDragProgress(0);
+    } else if (!show) {
+      // Drawer is animating in (show=false but shouldRender=true) or closing
+      // During opening animation, gradually increase blur
+      // During closing, this means we're in the final close phase
       onDragProgress(0);
     } else if (isClosing) {
-      // Animating to close
+      // Animating to close with smooth animation
       onDragProgress(0);
-    } else if (isDragging || dragY > 0) {
+    } else if (isDragging) {
       // Currently dragging - calculate progress (1 = fully open, 0 = fully closed)
       const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
       onDragProgress(progress);
+    } else if (dragY > 0) {
+      // Snapping back or animating
+      const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
+      onDragProgress(progress);
     } else {
-      // Fully open
+      // Fully open and stable
       onDragProgress(1);
     }
-  }, [show, dragY, isDragging, isClosing, onDragProgress]);
+  }, [shouldRender, show, dragY, isDragging, isClosing, onDragProgress]);
 
   if (!shouldRender) return null;
 
