@@ -223,6 +223,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
       <div 
         ref={scrollRef}
         className={`absolute inset-0 z-0 flex ${hasTeasers ? 'overflow-x-scroll snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar overscroll-x-none`}
+        style={{ touchAction: isDetailOpen ? 'none' : 'auto' }}
         onScroll={handleCarouselScroll}
       >
         {/* Slide 1: Main Image */}
