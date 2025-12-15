@@ -324,7 +324,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
       )}
 
       {/* Bottom Gradient Scrim - subtle fade at very bottom */}
-      <div className="absolute inset-x-0 bottom-0 z-20 h-1/4 bg-gradient-to-t from-white/80 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 z-20 h-1/2 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none" />
 
       {/* Content Container */}
       <div className="absolute bottom-0 left-0 right-16 z-30 p-6 pb-8 flex flex-col justify-end gap-4 pointer-events-none">
