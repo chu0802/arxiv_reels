@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo, useLayoutEffect, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 import { fetchRecommendationsClient } from './services/recommendationsClient';
 import { ratePaperClient } from './services/ratingClient';
 import { fetchCollectionsClient, fetchCollectionPapersClient } from './services/collectionsClient';
@@ -12,7 +12,6 @@ function App() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activePaperIndex, setActivePaperIndex] = useState(0);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
-  const [isHorizontalSwiping, setIsHorizontalSwiping] = useState(false); // Lock vertical scroll during horizontal swipe
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('Loading recommendations…');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -326,7 +325,7 @@ function App() {
       {/* Main Scroll Container */}
       <div 
         ref={scrollContainerRef}
-        className={`w-full h-full ${(isDetailDrawerOpen || isHorizontalSwiping) ? 'overflow-hidden' : 'overflow-y-scroll'} snap-y snap-mandatory no-scrollbar relative overscroll-none`}
+        className={`w-full h-full ${isDetailDrawerOpen ? 'overflow-hidden' : 'overflow-y-scroll'} snap-y snap-mandatory no-scrollbar relative overscroll-none`}
       >
         {/* Papers List */}
         {papers.map((paper, index) => {
@@ -352,8 +351,6 @@ function App() {
                 collectionIdMap={collectionIdMap}
                 onRate={handleRate}
                 onDetailOpenChange={setIsDetailDrawerOpen}
-                onHorizontalSwipeStart={() => setIsHorizontalSwiping(true)}
-                onHorizontalSwipeEnd={() => setIsHorizontalSwiping(false)}
               />
             </div>
           );
