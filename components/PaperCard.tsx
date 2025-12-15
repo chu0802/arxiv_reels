@@ -150,8 +150,13 @@ const PaperCard: React.FC<PaperCardProps> = ({
   };
 
   // Notify parent to lock/unlock underlying scroll when detail drawer toggles
+  // Use setTimeout to not block the drawer animation
   useEffect(() => {
-    onDetailOpenChange?.(isDetailOpen);
+    // Defer parent notification to not block drawer animation
+    const timer = setTimeout(() => {
+      onDetailOpenChange?.(isDetailOpen);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [isDetailOpen, onDetailOpenChange]);
 
   // Ensure scroll is unlocked if this card unmounts while detail is open
@@ -177,10 +182,20 @@ const PaperCard: React.FC<PaperCardProps> = ({
     };
   };
 
-  // Handle drag progress from DetailDrawer
-  const handleDragProgress = (progress: number, dragging: boolean) => {
+  // Handle drag progress from DetailDrawer - use refs to avoid re-renders during drag
+  const detailDragProgressRef = useRef(0);
+  const isDraggingDrawerRef = useRef(false);
+  
+  const handleDragProgress = useCallback((progress: number, dragging: boolean) => {
+    // Update refs immediately (no re-render)
+    detailDragProgressRef.current = progress;
+    isDraggingDrawerRef.current = dragging;
+    
+    // Only update state for significant changes to minimize re-renders
     setDetailDragProgress(progress);
-    setIsDraggingDrawer(dragging);
+    if (isDraggingDrawer !== dragging) {
+      setIsDraggingDrawer(dragging);
+    }
     
     // Track transitioning state for blur animation
     if (isDetailOpen || progress > 0) {
@@ -195,7 +210,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
         }
       }, 250); // Match drawer animation time
     }
-  };
+  }, [isDetailOpen, isDraggingDrawer]);
 
   return (
     <>

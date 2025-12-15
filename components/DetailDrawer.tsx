@@ -141,28 +141,42 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   // Notify parent of drag progress for blur transition
   // Progress: 1 = drawer fully open (drawer clear, papercard blurred)
   //           0 = drawer closing/closed (drawer blurred, papercard clear)
+  const lastProgressRef = useRef<{progress: number, dragging: boolean}>({progress: 0, dragging: false});
+  
   useEffect(() => {
     if (!onDragProgress) return;
     
     const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
     
+    let progress = 0;
+    let dragging = false;
+    
     if (!shouldRender || !show) {
       // Component not rendered or opening animation
-      onDragProgress(0, false);
+      progress = 0;
+      dragging = false;
     } else if (isClosing) {
       // Animating to close
-      onDragProgress(0, false);
+      progress = 0;
+      dragging = false;
     } else if (isDragging && dragY > 0) {
       // Currently dragging down - progress decreases as drawer moves down
-      const progress = Math.max(0, 1 - dragY / drawerHeight);
-      onDragProgress(progress, true);
+      progress = Math.max(0, 1 - dragY / drawerHeight);
+      dragging = true;
     } else if (dragY > 0) {
       // Snapping back (released but animating)
-      const progress = Math.max(0, 1 - dragY / drawerHeight);
-      onDragProgress(progress, false);
+      progress = Math.max(0, 1 - dragY / drawerHeight);
+      dragging = false;
     } else {
       // Fully open and stable
-      onDragProgress(1, false);
+      progress = 1;
+      dragging = false;
+    }
+    
+    // Only call if changed to avoid unnecessary re-renders
+    if (lastProgressRef.current.progress !== progress || lastProgressRef.current.dragging !== dragging) {
+      lastProgressRef.current = { progress, dragging };
+      onDragProgress(progress, dragging);
     }
   }, [shouldRender, show, dragY, isDragging, isClosing, onDragProgress]);
 

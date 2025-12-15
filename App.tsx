@@ -415,7 +415,8 @@ function App() {
       {/* Main Scroll Container */}
       <div 
         ref={scrollContainerRef}
-        className={`w-full h-full ${isDetailDrawerOpen ? 'overflow-hidden' : 'overflow-y-scroll'} snap-y snap-mandatory no-scrollbar relative overscroll-none`}
+        className="w-full h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar relative overscroll-none"
+        style={{ touchAction: isDetailDrawerOpen ? 'none' : 'auto' }}
       >
         {/* Papers List */}
         {papers.map((paper, index) => {
