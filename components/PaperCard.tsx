@@ -222,7 +222,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
                           backgroundImage: `url(${mainImageUrl})`,
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
-                          filter: 'blur(40px) opacity(0.7) saturate(1.5)',
+                          filter: 'blur(20px) opacity(0.7) saturate(1.5)',
                           transform: 'scale(1.2)' 
                         }
                   }
@@ -279,7 +279,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
                     backgroundImage: `url(${teaserImageUrl})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    filter: 'blur(40px) opacity(0.7) saturate(1.3)',
+                    filter: 'blur(20px) opacity(0.7) saturate(1.3)',
                     transform: 'scale(1.2)' 
                     }}
                 />
