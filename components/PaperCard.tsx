@@ -158,13 +158,15 @@ const PaperCard: React.FC<PaperCardProps> = ({
   }, [onDetailOpenChange]);
 
   // Calculate blur based on detail drawer state
-  // detailDragProgress: 0 = closed, 1 = fully open
-  // We want: blur when open (progress=1), clear when closed (progress=0)
+  // detailDragProgress: 1 = drawer fully open (papercard blurred)
+  //                     0 = drawer closing/closed (papercard clear)
+  // This is the inverse of DetailDrawer's blur
   const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
-  const blurAmount = detailDragProgress * 8; // Max 8px blur when fully open
+  const blurAmount = detailDragProgress * 8; // Max 8px blur when drawer fully open
   
   const getBlurStyle = (): React.CSSProperties => {
-    if (blurAmount === 0 && !isDetailTransitioning) {
+    // Only apply blur when drawer is open or transitioning
+    if (!isDetailOpen && !isDetailTransitioning) {
       return {};
     }
     return {
@@ -178,16 +180,18 @@ const PaperCard: React.FC<PaperCardProps> = ({
     setDetailDragProgress(progress);
     setIsDraggingDrawer(dragging);
     
-    // Track transitioning state
-    if (progress > 0 && progress < 1) {
+    // Track transitioning state for blur animation
+    if (isDetailOpen || progress > 0) {
       setIsDetailTransitioning(true);
-    } else if (progress === 0) {
-      // Closing complete - keep transitioning for animation
+    }
+    
+    // When fully closed (progress = 0 and not dragging), end transition after animation
+    if (progress === 0 && !dragging) {
       setTimeout(() => {
-        setIsDetailTransitioning(false);
+        if (!isDetailOpen) {
+          setIsDetailTransitioning(false);
+        }
       }, 350);
-    } else if (progress === 1) {
-      setIsDetailTransitioning(false);
     }
   };
 

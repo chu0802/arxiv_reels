@@ -133,29 +133,26 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   };
 
   // Notify parent of drag progress for blur transition
+  // Progress: 1 = drawer fully open (drawer clear, papercard blurred)
+  //           0 = drawer closing/closed (drawer blurred, papercard clear)
   useEffect(() => {
     if (!onDragProgress) return;
     
     const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
     
-    if (!shouldRender) {
-      // Component not rendered
-      onDragProgress(0, false);
-    } else if (!show) {
-      // Drawer is animating in (show=false but shouldRender=true) or closing
-      // During opening animation, gradually increase blur
-      // During closing, this means we're in the final close phase
+    if (!shouldRender || !show) {
+      // Component not rendered or opening animation
       onDragProgress(0, false);
     } else if (isClosing) {
-      // Animating to close with smooth animation
+      // Animating to close
       onDragProgress(0, false);
-    } else if (isDragging) {
-      // Currently dragging - calculate progress (1 = fully open, 0 = fully closed)
-      const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
+    } else if (isDragging && dragY > 0) {
+      // Currently dragging down - progress decreases as drawer moves down
+      const progress = Math.max(0, 1 - dragY / drawerHeight);
       onDragProgress(progress, true);
     } else if (dragY > 0) {
-      // Snapping back or animating
-      const progress = Math.max(0, Math.min(1, 1 - dragY / drawerHeight));
+      // Snapping back (released but animating)
+      const progress = Math.max(0, 1 - dragY / drawerHeight);
       onDragProgress(progress, false);
     } else {
       // Fully open and stable
@@ -165,11 +162,16 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
 
   if (!shouldRender) return null;
 
+  // Calculate drawer blur based on drag position (inverse of papercard)
+  const drawerHeight = drawerRef.current?.offsetHeight || window.innerHeight * 0.85;
+  const drawerProgress = show && !isClosing ? Math.max(0, 1 - dragY / drawerHeight) : 0;
+  const drawerBlur = (1 - drawerProgress) * 4; // Max 4px blur when closing
+
   // Calculate dynamic transition based on state
   const getTransition = () => {
     if (isDragging) return 'none';
-    if (isClosing) return 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
-    return 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+    if (isClosing) return 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), filter 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+    return 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
   };
 
   // Calculate opacity based on drag position
@@ -190,8 +192,9 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
         `}
         style={{ 
             transform: show ? `translateY(${dragY}px)` : 'translateY(100%)',
+            filter: `blur(${drawerBlur}px)`,
             transition: getTransition(),
-            willChange: 'transform'
+            willChange: 'transform, filter'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
