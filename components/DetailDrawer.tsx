@@ -51,7 +51,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
         setShouldRender(false);
         setIsClosing(false);
         setDragY(0);
-      }, 350);
+      }, 250); // Faster cleanup
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -117,7 +117,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
         setDragY(drawerHeight);
         setTimeout(() => {
           onClose();
-        }, 300);
+        }, 200); // Faster close
       } else {
         // Snap back
         setDragY(0);
@@ -176,16 +176,19 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   // Calculate dynamic transition based on state
   const getTransition = () => {
     if (isDragging) return 'none';
-    if (isClosing) return 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), filter 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
-    return 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+    if (isClosing) return 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), filter 0.2s cubic-bezier(0.32, 0.72, 0, 1)';
+    return 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), filter 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
   };
 
   // Calculate opacity based on drag position
   const backdropOpacity = Math.max(0, 1 - dragY / (window.innerHeight * 0.5));
 
+  // Disable pointer events when closing to allow immediate interaction with underlying content
+  const isInteractive = show && !isClosing;
+
   return (
   <div 
-    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center overscroll-none pointer-events-none ${show ? 'opacity-100' : 'opacity-0'}`}
+    className={`fixed inset-0 z-[60] flex items-end justify-center md:items-center overscroll-none ${isInteractive ? 'pointer-events-auto' : 'pointer-events-none'} ${show ? 'opacity-100' : 'opacity-0'}`}
     style={{
       backgroundColor: `rgba(15, 23, 42, ${0.1 * backdropOpacity})`,
       transition: isDragging ? 'none' : 'opacity 0.3s ease-out, background-color 0.3s ease-out'
@@ -194,7 +197,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       <div 
         ref={drawerRef}
         className={`
-            w-full h-[85vh] md:h-[90vh] md:max-w-4xl bg-white md:rounded-3xl rounded-t-3xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto
+            w-full h-[85vh] md:h-[90vh] md:max-w-4xl bg-white md:rounded-3xl rounded-t-3xl flex flex-col shadow-2xl overflow-hidden relative
         `}
         style={{ 
             transform: show ? `translateY(${dragY}px)` : 'translateY(100%)',

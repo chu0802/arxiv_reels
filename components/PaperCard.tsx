@@ -117,7 +117,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
             clickTimeoutRef.current = null;
             // Always open DetailDrawer on single tap (for both main image and teaser)
             setIsDetailOpen(true);
-        }, 200); // Reduced from 250ms for faster response
+        }, 150); // Faster response for single tap
     }
   };
 
@@ -173,7 +173,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
     return {
       filter: `blur(${blurAmount}px)`,
-      transition: isDraggingDrawer ? 'none' : 'filter 0.35s cubic-bezier(0.32, 0.72, 0, 1)'
+      transition: isDraggingDrawer ? 'none' : 'filter 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
     };
   };
 
@@ -193,7 +193,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
         if (!isDetailOpen) {
           setIsDetailTransitioning(false);
         }
-      }, 350);
+      }, 250); // Match drawer animation time
     }
   };
 
