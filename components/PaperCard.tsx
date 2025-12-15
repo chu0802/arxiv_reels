@@ -226,8 +226,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
       {/* Horizontal Carousel Container - using native CSS scroll like vertical paper scroll */}
       <div 
         ref={scrollRef}
-        className={`absolute inset-0 z-0 flex ${hasTeasers ? 'overflow-x-scroll snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar overscroll-x-none`}
-        style={{ touchAction: isDetailOpen ? 'none' : 'auto' }}
+        className={`absolute inset-0 z-0 flex ${isDetailOpen ? 'overflow-hidden' : (hasTeasers ? 'overflow-x-scroll snap-x snap-mandatory' : 'overflow-hidden')} no-scrollbar overscroll-x-none`}
         onScroll={handleCarouselScroll}
       >
         {/* Slide 1: Main Image */}
