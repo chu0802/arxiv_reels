@@ -225,11 +225,11 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
       ref={scrollRef}
       className="flex-1 overflow-y-auto overscroll-contain p-6 md:p-12 modern-scrollbar pt-4"
     >
-            {/* Teaser Image Section - Show at top when viewing a teaser */}
-            {currentTeaser && (
-                <div className="mb-8">
+            {/* Teaser View - Show ONLY teaser image and caption */}
+            {currentTeaser ? (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
                     <div 
-                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-lg cursor-zoom-in group relative"
+                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-lg cursor-zoom-in group relative w-full max-w-2xl"
                         onClick={onTeaserClick}
                     >
                         <img 
@@ -245,20 +245,31 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
                             </span>
                         </div>
                     </div>
-                    {/* Figure Caption */}
+                    {/* Figure Caption - parse and bold the Figure/Table prefix */}
                     {currentTeaser.caption && (
-                        <div className="mt-4 p-4 bg-slate-50/80 rounded-xl">
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                <span className="font-bold text-slate-800">
-                                    {currentTeaser.figureType} {currentTeaser.figureNumber + 1}:
-                                </span>{' '}
-                                {currentTeaser.caption}
+                        <div className="mt-6 p-5 bg-slate-50/80 rounded-xl w-full max-w-2xl">
+                            <p className="text-base text-slate-600 leading-relaxed text-justify">
+                                {(() => {
+                                    const caption = currentTeaser.caption;
+                                    // Match "Figure X:" or "Table X:" at the beginning
+                                    const match = caption.match(/^(Figure\s*\d+|Table\s*\d+)\s*[:.]?\s*/i);
+                                    if (match) {
+                                        return (
+                                            <>
+                                                <span className="font-bold text-slate-800">{match[1]}:</span>{' '}
+                                                {caption.slice(match[0].length)}
+                                            </>
+                                        );
+                                    }
+                                    return caption;
+                                })()}
                             </p>
                         </div>
                     )}
                 </div>
-            )}
-
+            ) : (
+                /* Regular Paper Detail View */
+                <>
             {/* Header Info */}
             <div className="mb-6 flex flex-wrap items-center gap-3">
                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-lg bg-slate-50 text-slate-500">
@@ -338,6 +349,8 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
                     Read Full Paper (PDF)
                 </a>
              </div>
+                </>
+            )}
         </div>
       </div>
     </div>
