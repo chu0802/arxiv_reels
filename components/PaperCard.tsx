@@ -150,13 +150,17 @@ const PaperCard: React.FC<PaperCardProps> = ({
   };
 
   // Notify parent to lock/unlock underlying scroll when detail drawer toggles
-  // Use setTimeout to not block the drawer animation
   useEffect(() => {
-    // Defer parent notification to not block drawer animation
-    const timer = setTimeout(() => {
-      onDetailOpenChange?.(isDetailOpen);
-    }, 0);
-    return () => clearTimeout(timer);
+    if (isDetailOpen) {
+      // Immediately lock scroll when opening
+      onDetailOpenChange?.(true);
+    } else {
+      // Defer unlock to not interfere with close animation
+      const timer = setTimeout(() => {
+        onDetailOpenChange?.(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
   }, [isDetailOpen, onDetailOpenChange]);
 
   // Ensure scroll is unlocked if this card unmounts while detail is open
