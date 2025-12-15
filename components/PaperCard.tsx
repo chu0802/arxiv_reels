@@ -178,7 +178,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
     }
     return {
       filter: `blur(${blurAmount}px)`,
-      transition: isDraggingDrawer ? 'none' : 'filter 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
+      transition: isDraggingDrawer ? 'none' : 'filter 0.35s cubic-bezier(0.22, 1, 0.36, 1)'
     };
   };
 

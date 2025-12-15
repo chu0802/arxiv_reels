@@ -190,8 +190,8 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   // Calculate dynamic transition based on state
   const getTransition = () => {
     if (isDragging) return 'none';
-    if (isClosing) return 'transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), filter 0.2s cubic-bezier(0.32, 0.72, 0, 1)';
-    return 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), filter 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+    if (isClosing) return 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), filter 0.25s cubic-bezier(0.32, 0.72, 0, 1)';
+    return 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s cubic-bezier(0.22, 1, 0.36, 1)';
   };
 
   // Calculate opacity based on drag position
