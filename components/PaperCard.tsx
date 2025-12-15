@@ -370,7 +370,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
             <span className="text-slate-500">
               {new Date(paper.published_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </span>
-            <span>{currentImageIndex === 1 ? 'Tap to expand image' : 'Tap to view details'}</span>
+            <span>Tap to view details</span>
           </div>
       </div>
 
