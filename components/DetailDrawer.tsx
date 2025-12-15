@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { PaperData, Collection } from '../types';
+import { PaperData, Collection, TeaserFigure } from '../types';
 
 interface DetailDrawerProps {
   paper: PaperData;
@@ -8,9 +8,10 @@ interface DetailDrawerProps {
   onClose: () => void;
   onTeaserClick?: () => void;
   onDragProgress?: (progress: number, isDragging: boolean) => void; // 0 = closed position, 1 = fully open
+  currentTeaser?: TeaserFigure | null;
 }
 
-const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen, onClose, onTeaserClick, onDragProgress }) => {
+const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen, onClose, onTeaserClick, onDragProgress, currentTeaser }) => {
   const [shouldRender, setShouldRender] = useState(false);
   const [show, setShow] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -259,7 +260,37 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
             </div>
 
             {/* Teaser Image Section (Only if available) */}
-            {!imageError && (
+            {currentTeaser && (
+                <div className="mb-10">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            {currentTeaser.figureType} {currentTeaser.figureNumber}
+                        </h3>
+                    </div>
+                    <div 
+                        className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 shadow-sm cursor-zoom-in group relative"
+                        onClick={onTeaserClick}
+                    >
+                        <img 
+                            src={currentTeaser.imageUrl}
+                            alt={`${currentTeaser.figureType} ${currentTeaser.figureNumber}`}
+                            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={() => setImageError(true)}
+                        />
+                    </div>
+                    {/* Figure Caption */}
+                    {currentTeaser.caption && (
+                        <p className="mt-4 text-sm text-slate-600 leading-relaxed italic">
+                            <span className="font-semibold not-italic text-slate-700">
+                                {currentTeaser.figureType} {currentTeaser.figureNumber}:
+                            </span>{' '}
+                            {currentTeaser.caption}
+                        </p>
+                    )}
+                </div>
+            )}
+            {/* Fallback: show old teaser image if no currentTeaser but image loads */}
+            {!currentTeaser && !imageError && (
                 <div className="mb-10">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Preview</h3>
                     <div 

@@ -13,6 +13,13 @@ export interface Collection {
   color: string;
 }
 
+export interface TeaserFigure {
+  caption: string;
+  figureNumber: number;
+  figureType: string;
+  imageUrl: string;
+}
+
 export interface PaperData {
   paper_id: number;
   arxiv_id: string;
@@ -30,6 +37,7 @@ export interface PaperData {
   abstract: string;
   relevance: number;
   collections: Collection[];
+  teaser_figures?: TeaserFigure[];
 }
 
 export interface PaperMap {

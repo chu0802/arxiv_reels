@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PaperData, Collection } from '../types';
+import { PaperData, Collection, TeaserFigure } from '../types';
 import DetailDrawer from './DetailDrawer';
 import CollectionDrawer from './CollectionDrawer';
 
@@ -36,9 +36,18 @@ const PaperCard: React.FC<PaperCardProps> = ({
 
   const [collections, setCollections] = useState(paper.collections);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [hasTeaser, setHasTeaser] = useState<boolean | null>(null); // null = loading, true/false
   const [detailDragProgress, setDetailDragProgress] = useState(0); // 0 = closed, 1 = fully open
   const [isDetailTransitioning, setIsDetailTransitioning] = useState(false); // Track if drawer is animating
+  
+  // Teaser figures from paper data
+  const teaserFigures: TeaserFigure[] = paper.teaser_figures || [];
+  const hasTeasers = teaserFigures.length > 0;
+  const totalSlides = 1 + teaserFigures.length; // 1 main image + N teasers
+  
+  // Get current teaser (if on a teaser slide)
+  const currentTeaser = currentImageIndex > 0 && currentImageIndex <= teaserFigures.length 
+    ? teaserFigures[currentImageIndex - 1] 
+    : null;
   
   // Ref to handle click debounce
   const clickTimeoutRef = useRef<any>(null);
@@ -48,24 +57,10 @@ const PaperCard: React.FC<PaperCardProps> = ({
 
   // Construct URLs
   const mainImageUrl = `https://paper-assets.alphaxiv.org/image/${paper.arxiv_id}v1.png`;
-  const teaserImageUrl = `https://www.scholar-inbox.com/teaser_figures/${paper.paper_id}.0.jpeg`;
-
-  // Preload/Check teaser image existence and dimensions (Metadata/Attribute Check)
-  useEffect(() => {
-    // Optimization: Check for teaser if we should preload attributes (wider range) OR if priority is high.
-    // This allows us to determine the card layout (hasTeaser?) before the user fully arrives.
-    if (!preloadAttributes && !priority) return;
-    if (hasTeaser !== null) return; // Already checked
-
-    const img = new Image();
-    img.src = teaserImageUrl;
-    img.onload = () => {
-        setHasTeaser(true);
-        // Determine if portrait (height > width)
-        setIsTeaserPortrait(img.naturalHeight > img.naturalWidth);
-    };
-    img.onerror = () => setHasTeaser(false);
-  }, [teaserImageUrl, priority, preloadAttributes, hasTeaser]);
+  
+  // Build teaser URL from relative path
+  const getTeaserFullUrl = (teaser: TeaserFigure) => 
+    `https://www.scholar-inbox.com${teaser.imageUrl}`;
 
   const openTeaser = () => {
     setIsClosingTeaser(false);
@@ -203,10 +198,9 @@ const PaperCard: React.FC<PaperCardProps> = ({
       onClick={handleInteraction}
     >
       {/* Horizontal Carousel Container */}
-      {/* Disable scrolling if no teaser */}
       <div 
         ref={scrollRef}
-        className={`absolute inset-0 z-0 flex ${hasTeaser ? 'overflow-x-auto snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar`}
+        className={`absolute inset-0 z-0 flex ${hasTeasers ? 'overflow-x-auto snap-x snap-mandatory' : 'overflow-hidden'} no-scrollbar`}
         onScroll={handleScroll}
         style={{ scrollBehavior: 'smooth' }}
       >
@@ -235,17 +229,15 @@ const PaperCard: React.FC<PaperCardProps> = ({
                     <div className="w-[90%] text-sm font-semibold text-slate-800 line-clamp-2 mt-12 mb-2">{paper.title}</div>
                     <div className="w-[90%] text-xs text-slate-500 line-clamp-2 mb-4">{paper.authors}</div>
                     <div className="w-[90%] flex flex-col items-center gap-2 mx-auto">
-                      {hasTeaser === false ? (
+                      {!hasTeasers ? (
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Teaser unavailable</div>
                       ) : (
                         <img
-                          src={teaserImageUrl}
+                          src={getTeaserFullUrl(teaserFigures[0])}
                           alt="Teaser Figure"
                           className="w-full max-w-full h-auto max-h-48 object-contain rounded-sm shadow-sm"
                           loading="lazy"
                           draggable={false}
-                          onLoad={() => setHasTeaser(true)}
-                          onError={() => setHasTeaser(false)}
                         />
                       )}
                     </div>
@@ -269,14 +261,14 @@ const PaperCard: React.FC<PaperCardProps> = ({
             </div>
         </div>
 
-        {/* Slide 2: Teaser Figure - Only render if confirmed exists */}
-        {hasTeaser && (
-            <div className="relative w-full h-full shrink-0 snap-center overflow-hidden bg-white">
+        {/* Teaser Slides - Render each teaser figure */}
+        {teaserFigures.map((teaser, index) => (
+            <div key={index} className="relative w-full h-full shrink-0 snap-center overflow-hidden bg-white">
                  {/* Teaser Background Blur */}
                  <div 
                     className="absolute inset-0 z-0"
                     style={{
-                    backgroundImage: `url(${teaserImageUrl})`,
+                    backgroundImage: `url(${getTeaserFullUrl(teaser)})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     filter: 'blur(60px) opacity(0.25) saturate(1.3)',
@@ -285,32 +277,32 @@ const PaperCard: React.FC<PaperCardProps> = ({
                 />
                  <div className="absolute inset-0 z-10 flex items-center justify-center pt-12 pb-8 px-2 -translate-y-3">
                     <img 
-                        src={teaserImageUrl} 
-                        alt="Teaser Figure"
+                        src={getTeaserFullUrl(teaser)} 
+                        alt={`${teaser.figureType} ${teaser.figureNumber + 1}`}
                         className="w-full h-full object-contain drop-shadow-xl rounded-sm"
-                        loading={priority ? "eager" : "lazy"}
+                        loading={priority || index === 0 ? "eager" : "lazy"}
                         draggable={false}
                     />
                 </div>
-                {/* Helper Text for Interaction */}
-                <div className="absolute bottom-24 left-0 right-0 text-center z-20 opacity-60">
-                    <span className="text-[10px] font-bold text-slate-500 bg-white/50 backdrop-blur-sm px-2 py-1 rounded-full uppercase tracking-widest">
-                        {isTeaserPortrait ? 'Tap to Expand' : 'Tap to Rotate & Expand'}
+                {/* Figure Label */}
+                <div className="absolute bottom-24 left-0 right-0 text-center z-20 opacity-70">
+                    <span className="text-[10px] font-bold text-slate-600 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full uppercase tracking-wider">
+                        {teaser.figureType} {teaser.figureNumber + 1}
                     </span>
                 </div>
             </div>
-        )}
+        ))}
       </div>
 
-      {/* Pagination Dots - Only show if has teaser */}
-      {hasTeaser && (
-          <div className="absolute bottom-2 left-0 right-0 z-30 flex justify-center gap-2 pointer-events-none pb-1">
-            <div 
-                className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${currentImageIndex === 0 ? 'bg-slate-800 w-4' : 'bg-slate-300 w-1.5'}`}
-            />
-            <div 
-                className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${currentImageIndex === 1 ? 'bg-slate-800 w-4' : 'bg-slate-300 w-1.5'}`}
-            />
+      {/* Pagination Dots - Show for all slides */}
+      {hasTeasers && (
+          <div className="absolute bottom-2 left-0 right-0 z-30 flex justify-center gap-1.5 pointer-events-none pb-1">
+            {Array.from({ length: totalSlides }).map((_, index) => (
+              <div 
+                key={index}
+                className={`h-1.5 rounded-full transition-all duration-300 shadow-sm ${currentImageIndex === index ? 'bg-slate-800 w-4' : 'bg-slate-300 w-1.5'}`}
+              />
+            ))}
           </div>
       )}
 
@@ -417,6 +409,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
       onClose={() => setIsDetailOpen(false)}
       onTeaserClick={openTeaser}
       onDragProgress={handleDragProgress}
+      currentTeaser={currentTeaser}
     />
 
     <CollectionDrawer
@@ -430,7 +423,7 @@ const PaperCard: React.FC<PaperCardProps> = ({
     />
     
     {/* Full Screen Image Overlay */}
-    {showFullScreenTeaser && (
+    {showFullScreenTeaser && currentTeaser && (
         <div 
             className={`fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center cursor-zoom-out ${isClosingTeaser ? 'animate-fade-out' : 'animate-fade-in'}`}
             onClick={(e) => {
@@ -439,8 +432,8 @@ const PaperCard: React.FC<PaperCardProps> = ({
             }}
         >
              <img 
-                src={teaserImageUrl}
-                alt="Full Screen Teaser"
+                src={getTeaserFullUrl(currentTeaser)}
+                alt={`${currentTeaser.figureType} ${currentTeaser.figureNumber + 1}`}
                 className={`
                     ${isTeaserPortrait ? 'w-full h-full' : 'w-[100vh] h-[100vw] max-w-none'} 
                     object-contain 
@@ -448,6 +441,17 @@ const PaperCard: React.FC<PaperCardProps> = ({
                     ${getTeaserAnimation()}
                 `}
              />
+             {/* Caption overlay */}
+             <div 
+                className={`
+                    fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent
+                    ${isClosingTeaser ? 'opacity-0 transition-opacity duration-300' : ''}
+                `}
+             >
+                <p className="text-white/90 text-sm text-center leading-relaxed max-w-2xl mx-auto">
+                    {currentTeaser.caption}
+                </p>
+             </div>
              <div 
                 className={`
                     fixed text-white/50 text-xs font-bold uppercase tracking-widest whitespace-nowrap 
