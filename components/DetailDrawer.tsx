@@ -26,7 +26,13 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
   const lastTime = useRef(0);
 
   const displayCollections = collections || paper.collections;
-  const teaserImageUrl = `https://www.scholar-inbox.com/teaser_figures/${paper.paper_id}.0.jpeg`;
+  
+  // Build full URL from relative teaser path
+  const getTeaserFullUrl = (teaser: TeaserFigure) => 
+    `https://www.scholar-inbox.com${teaser.imageUrl}`;
+  
+  // Fallback teaser URL for old logic
+  const fallbackTeaserUrl = `https://www.scholar-inbox.com/teaser_figures/${paper.paper_id}.0.jpeg`;
 
   useEffect(() => {
     if (isOpen) {
@@ -272,7 +278,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
                         onClick={onTeaserClick}
                     >
                         <img 
-                            src={currentTeaser.imageUrl}
+                            src={getTeaserFullUrl(currentTeaser)}
                             alt={`${currentTeaser.figureType} ${currentTeaser.figureNumber}`}
                             className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={() => setImageError(true)}
@@ -298,7 +304,7 @@ const DetailDrawer: React.FC<DetailDrawerProps> = ({ paper, collections, isOpen,
                         onClick={onTeaserClick}
                     >
                         <img 
-                            src={teaserImageUrl}
+                            src={fallbackTeaserUrl}
                             alt="Paper Preview"
                             className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={() => setImageError(true)}
